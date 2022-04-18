@@ -5,6 +5,9 @@ description = "Package for working with extended CSV (XCSV) files"
 authors = ["Paul Breen <pbree@bas.ac.uk>"]
 readme = "README.md"
 license = "Apache-2.0"
+repository = "https://github.com/paul-breen/xcsv"
+homepage = "https://github.com/paul-breen/xcsv"
+documentation = "https://github.com/paul-breen/xcsv/blob/main/README.md"
 
 [tool.poetry.dependencies]
 python = "^3.8"

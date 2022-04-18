@@ -51,6 +51,14 @@ time (year) [a],depth (m)
 2012,0.575
 ```
 
+## Install
+
+The package can be installed from PyPI:
+
+```bash
+$ pip install xcsv
+```
+
 ## Using the package
 
 The package has a general `XCSV` class, that has a `metadata` attribute that holds the parsed contents of the extended file header section and the parsed column headers from the data table, and a `data` attribute that holds the data table (including the column headers as-is).
