@@ -37,7 +37,7 @@ xcsv is a package for reading and writing extended CSV files.
 * No leading/trailing whitespace.
 * Preferably use a common vocabulary for variable name, such as [CF conventions](http://cfconventions.org/index.html).
 * Units in parentheses.
-* Optional footnotes in square brackets.
+* Optional notes in square brackets, that reference an item in the extended header section.
 
 ```
 time (year) [a],depth (m)
@@ -71,7 +71,7 @@ The `metadata` attribute is a `dict`, with the following general structure:
 
 and the `data` attribute is a `pandas.DataFrame`, and so has all the features of the [pandas](https://pandas.pydata.org/docs/index.html) package.
 
-The package also has a `Reader` class for reading an extended CSV file, and similarly a `Writer` class for writing an `XCSV` object to a file in the extended CSV format.  In addition there is a `File` class that provides a convenient context manager for reading and writing these files.
+The package also has a `Reader` class for reading an extended CSV file into an `XCSV` object, and similarly a `Writer` class for writing an `XCSV` object to a file in the extended CSV format.  In addition there is a `File` class that provides a convenient context manager for reading and writing these files.
 
 ### Examples
 
