@@ -28,7 +28,7 @@ xcsv is a package for reading and writing extended CSV files.
 # authors: A B, C D
 # latitude: -73.86 (degree_north)
 # longitude: -65.86 (degree_east)
-# elevation: 1897, (m a.s.l.)
+# elevation: 1897 (m a.s.l.)
 # [a]: 2012 not a complete year
 ```
 
