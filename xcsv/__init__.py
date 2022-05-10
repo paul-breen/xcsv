@@ -171,6 +171,32 @@ class Reader(object):
 
         self.fp = fp
 
+    def set_header_key_value(self, key, value):
+        """
+        Set the given header key to the given value
+
+        * If the key doesn't already exist in the header, then the key is set
+          to the value.
+        * If the key already exists in the header and is a scalar type, then
+          it is changed into a list and its previous value and the given value
+          are stored.
+        * If the key is already a list, then the value is appended.
+
+        :param key: The header item key
+        :type key: str
+        :param value: The header item value
+        :type value: str
+        """
+
+        if key in self.header:
+            if isinstance(self.header[key], list):
+                self.header[key].append(value)
+            else:
+                prev_value = self.header[key]
+                self.header[key] = [prev_value, value]
+        else:
+            self.header[key] = value
+
     def read_header(self, comment='#', delimiter=':', parse_metadata=True):
         """
         Read the header from the file
@@ -188,6 +214,19 @@ class Reader(object):
 
         {k1: v1, k2: f'{v2} ({u2})'}
 
+        Normally we parse a key and a value from each header line.  If a line
+        has no key, then it's a continuation line so just take the value and
+        append to the previous key as a list.  This will raise an exception
+        if no previous key exists.
+
+        A continuation line can be expressed in two forms.
+
+        Simple form - Comment character, no key or delimiter, value:
+        # The second paragraph...
+
+        Escaped form - Comment character, no key but delimiter, value:
+        # : The second paragraph that may contain delimiter http://...
+
         :param comment: Comment character of the extended header section
         :type comment: str
         :param delimiter: Key/value delimiter of the extended header section
@@ -198,23 +237,38 @@ class Reader(object):
         :rtype: dict
         """
 
+        key, value = None, None
         self.fp.seek(0, 0)
 
         for line in self.fp:
             if line.startswith(comment):
-                key, value = line.split(delimiter, maxsplit=1)
-                key = key.strip().lower().lstrip(comment + ' ')
-                value = value.strip()
+                try:
+                    left, right = line.split(delimiter, maxsplit=1)
+                except ValueError as e:
+                    # Value but no key: continuation of previous key
+                    if key:
+                        value = line.strip().lstrip(comment + ' ')
+                    else:
+                        raise
+                else:
+                    left = left.strip().lower().lstrip(comment + ' ')
+
+                    # If left is empty it's an escaped continuation of
+                    # previous key, otherwise it's a normal key/value pair
+                    if left:
+                        key = left
+
+                    value = right.strip()
 
                 if parse_metadata:
                     tokens = XCSV.parse_file_header_tokens(value)
 
                     if tokens:
-                        self.header[key] = tokens
+                        self.set_header_key_value(key, tokens)
                     else:
-                        self.header[key] = value
+                        self.set_header_key_value(key, value)
                 else:
-                    self.header[key] = value
+                    self.set_header_key_value(key, value)
             else:
                 break
 
@@ -378,7 +432,27 @@ class Writer(object):
         :rtype: list
         """
 
-        header_lines = [self.format_header_line(comment, k, delimiter, self.header_value_as_string(v)) for k,v in self.header.items()]
+        header_lines = []
+
+        for key, value in self.header.items():
+            if isinstance(value, list):
+                # This header item is made up of a key and continuation lines
+                for i, element in enumerate(value):
+                    if i == 0:
+                        line = self.format_header_line(comment, key, delimiter, self.header_value_as_string(element))
+                    else:
+                        # If the value contains the delimiter, then we have
+                        # to create an escaped continuation line, e.g.
+                        # # : The continuation value: <- with delimiter
+                        value_str = self.header_value_as_string(element)
+                        cont_key = ''
+                        cont_delimiter = delimiter if delimiter.strip() in value_str else ''
+                        line = self.format_header_line(comment, cont_key, cont_delimiter, value_str)
+
+                    header_lines.append(line)
+            else:
+                line = self.format_header_line(comment, key, delimiter, self.header_value_as_string(value))
+                header_lines.append(line)
 
         return header_lines
 
