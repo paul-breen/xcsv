@@ -251,7 +251,7 @@ class Reader(object):
                     else:
                         raise
                 else:
-                    left = left.strip().lower().lstrip(comment + ' ')
+                    left = left.strip().lstrip(comment + ' ')
 
                     # If left is empty it's an escaped continuation of
                     # previous key, otherwise it's a normal key/value pair
