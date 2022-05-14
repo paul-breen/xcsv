@@ -1,4 +1,5 @@
 import os
+import io
 
 import pytest
 import pandas as pd
@@ -16,10 +17,10 @@ def dummy_metadata():
         'header': {
             'id': '1',
             'title': 'The title',
-            'summary': 'This dataset...',
+            'summary': ['This dataset...','The second summary paragraph.','The third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain'],
             'authors': 'A B, C D',
             'latitude': {'value': '-73.86', 'units': 'degree_north'},
-            'longitude': {'value': '-65.86', 'units': 'degree_east'},
+            'longitude': {'value': '-65.46', 'units': 'degree_east'},
             'elevation': {'value': '1897', 'units': 'm a.s.l.'},
             '[a]': '2012 not a complete year'
         },
@@ -43,7 +44,16 @@ def dummy_data():
 @pytest.fixture
 def dummy_XCSV(dummy_metadata, dummy_data):
     return xcsv.XCSV(metadata=dummy_metadata, data=dummy_data)
- 
+
+@pytest.fixture
+def short_test_data():
+    in_file = base + '/data/short-test-data.csv'
+
+    with xcsv.File(in_file) as f:
+        content = f.read()
+
+    return content
+
 def test_parse_tokens_dict():
     pattern = r'(?P<name>.+)\s+\((?P<units>.+)\)'
     s = 'a_name (some_units)'
@@ -257,4 +267,139 @@ def test_rename_column_headers_as_labels_empty(dummy_data):
     expected = ['time (year) [a]', 'depth (m)']
     f.rename_column_headers_as_labels()
     assert f.data.columns.to_list() == expected
+
+def test_read_short_test_data(dummy_XCSV, short_test_data):
+    assert short_test_data.metadata == dummy_XCSV.metadata
+    assert short_test_data.data.all().all() == dummy_XCSV.data.all().all()
+
+def test_read_header():
+    s = """# id: 1
+# title: The title
+# summary: This dataset...
+"""
+    fp = io.StringIO(s)
+    f = xcsv.Reader(fp=fp)
+    expected = {'id': '1', 'title': 'The title', 'summary': 'This dataset...'}
+    header = f.read_header()
+    assert header == expected
+
+def test_read_header_no_init_key():
+    s = """# This dataset...
+"""
+    fp = io.StringIO(s)
+    f = xcsv.Reader(fp=fp)
+
+    with pytest.raises(ValueError):
+        header = f.read_header()
+
+def test_read_header_continuation_simple_form():
+    s = """# id: 1
+# title: The title
+# summary: This dataset...
+# The second summary paragraph.
+"""
+    fp = io.StringIO(s)
+    f = xcsv.Reader(fp=fp)
+    expected = {'id': '1', 'title': 'The title', 'summary': ['This dataset...','The second summary paragraph.']}
+    header = f.read_header()
+    assert header == expected
+
+def test_read_header_continuation_escaped_form():
+    s = """# id: 1
+# title: The title
+# summary: This dataset...
+# The second summary paragraph.
+# : The third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain
+"""
+    fp = io.StringIO(s)
+    f = xcsv.Reader(fp=fp)
+    expected = {'id': '1', 'title': 'The title', 'summary': ['This dataset...','The second summary paragraph.','The third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain']}
+    header = f.read_header()
+    assert header == expected
+
+def test_read_header_continuation_without_escaped_form():
+    # If we forget to escape a continuation line that contains the delimiter
+    # in its value, then we end up with an unintended key that is all of the
+    # text to the left of the delimiter, with the value being the remainder
+    # of the line
+    s = """# id: 1
+# title: The title
+# summary: This dataset...
+# The second summary paragraph.
+# The third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain
+"""
+    fp = io.StringIO(s)
+    f = xcsv.Reader(fp=fp)
+    expected = {'id': '1', 'title': 'The title', 'summary': ['This dataset...','The second summary paragraph.'],'The third summary paragraph.  Escaped because it contains the delimiter in a URL https': '//dummy.domain'}
+    header = f.read_header()
+    assert header == expected
+
+def test_read_header_continuation_repeated_key_form():
+    # The repeated key form is identical to the escaped form.  It's
+    # essentially just a more verbose expression.  The important bit is that
+    # the line includes the delimiter at the start.  If the key was omitted,
+    # it would use the previous key anyway, which is the same
+    s = """# id: 1
+# title: The title
+# summary: This dataset...
+# The second summary paragraph.
+# summary: The third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain
+"""
+    fp = io.StringIO(s)
+    f = xcsv.Reader(fp=fp)
+    expected = {'id': '1', 'title': 'The title', 'summary': ['This dataset...','The second summary paragraph.','The third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain']}
+    header = f.read_header()
+    assert header == expected
+
+def test_read_header_no_value():
+    s = """# id:
+"""
+    expected = {'id': ''}
+    fp = io.StringIO(s)
+    f = xcsv.Reader(fp=fp)
+    header = f.read_header()
+    assert header == expected
+
+def test_set_header_key_value():
+    f = xcsv.Reader()
+    key, value = 'summary', 'This dataset...'
+    f.set_header_key_value(key, value)
+    assert f.header[key] == value
+
+    # Check that reading a continutation line converts the existing header
+    # item to a list
+    key, value = 'summary', 'The second summary paragraph.'
+    f.set_header_key_value(key, value)
+    assert f.header[key] == ['This dataset...','The second summary paragraph.']
+
+def test_reconstruct_header_lines_list_item():
+    f = xcsv.Writer()
+    f.header = {'summary': ['This dataset...','The second summary paragraph.']}
+    expected = """# summary: This dataset...
+# The second summary paragraph.
+"""
+    actual = '\n'.join(f.reconstruct_header_lines('# ', ': ')) + '\n'
+    assert actual == expected
+
+def test_reconstruct_header_lines_escaped_list_item():
+    f = xcsv.Writer()
+    f.header = {'summary': ['This dataset...','The second summary paragraph.','The third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain']}
+    expected = """# summary: This dataset...
+# The second summary paragraph.
+# : The third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain
+"""
+    actual = '\n'.join(f.reconstruct_header_lines('# ', ': ')) + '\n'
+    assert actual == expected
+
+def test_reconstruct_header_lines_escaped_list_item_custom_delimiter():
+    # Ensure that if a custom delimiter is specified, then any string that
+    # contains this is escaped using this leading custom delimiter
+    f = xcsv.Writer()
+    f.header = {'summary': ['This dataset...','The second summary paragraph.','The third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain']}
+    expected = """# summary/ This dataset...
+# The second summary paragraph.
+# / The third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain
+"""
+    actual = '\n'.join(f.reconstruct_header_lines('# ', '/ ')) + '\n'
+    assert actual == expected
 
