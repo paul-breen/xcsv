@@ -16,8 +16,10 @@ xcsv is a package for reading and writing extended CSV files.
 * Each line introduced by a comment ('#') character.
 * Each line contains a single header item.
 * Key/value separator ': '.
+* Multi-line values naturally continued over to the next lines following the line introducing the key.
+* Continuation lines that contain the delimiter character in the value must be escaped by a leading delimiter.
 * Preferably use a common vocabulary for attribute name, such as [CF conventions](http://cfconventions.org/index.html).
-* Preferably include recommended attributes from [ACDD](https://wiki.esipfed.org/Attribute_Convention_for_Data_Discovery_1-3).
+* Preferably include recommended attributes from [Attribute Convention for Data Discovery (ACDD)](https://wiki.esipfed.org/Attribute_Convention_for_Data_Discovery_1-3).
 * Preferably use units from [Unified Code for Units of Measure](https://ucum.org/ucum.html) and/or [Udunits](https://www.unidata.ucar.edu/software/udunits/).
 * Units in parentheses.
 
@@ -25,9 +27,11 @@ xcsv is a package for reading and writing extended CSV files.
 # id: 1
 # title: The title
 # summary: This dataset...
+# The second summary paragraph.
+# : The third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain
 # authors: A B, C D
 # latitude: -73.86 (degree_north)
-# longitude: -65.86 (degree_east)
+# longitude: -65.46 (degree_east)
 # elevation: 1897 (m a.s.l.)
 # [a]: 2012 not a complete year
 ```
@@ -77,7 +81,7 @@ The package also has a `Reader` class for reading an extended CSV file into an `
 
 #### Simple read and print
 
-Read in a file and print the contents to `stdout`.  This shows how the contents of the extended CSV file are stored in the `XCSV` object.  Given the following script called, say, `simple_read.py`:
+Read in a file and print the contents to `stdout`.  This shows how the contents of the extended CSV file are stored in the `XCSV` object.  Note how multi-line values, such as `summary` here, are stored in a list.  Given the following script called, say, `simple_read.py`:
 
 ```python
 import argparse
@@ -98,7 +102,7 @@ Running it would produce:
 
 ```bash
 $ python3 simple_read.py example.csv
-{'header': {'id': '1', 'title': 'The title', 'summary': 'This dataset...', 'authors': 'A B, C D', 'latitude': {'value': '-73.86', 'units': 'degree_north'}, 'longitude': {'value': '-65.86', 'units': 'degree_east'}, 'elevation': {'value': '1897,', 'units': 'm a.s.l.'}, '[a]': '2012 not a complete year'}, 'column_headers': {'time (year) [a]': {'name': 'time', 'units': 'year', 'notes': 'a'}, 'depth (m)': {'name': 'depth', 'units': 'm', 'notes': None}}}
+{'header': {'id': '1', 'title': 'The title', 'summary': ['This dataset...', 'The second summary paragraph.', 'The third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain'], 'authors': 'A B, C D', 'latitude': {'value': '-73.86', 'units': 'degree_north'}, 'longitude': {'value': '-65.46', 'units': 'degree_east'}, 'elevation': {'value': '1897', 'units': 'm a.s.l.'}, '[a]': '2012 not a complete year'}, 'column_headers': {'time (year) [a]': {'name': 'time', 'units': 'year', 'notes': 'a'}, 'depth (m)': {'name': 'depth', 'units': 'm', 'notes': None}}}
    time (year) [a]  depth (m)
 0             2012      0.575
 1             2011      1.125
