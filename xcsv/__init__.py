@@ -43,7 +43,8 @@ class XCSV(object):
         'file_header_template': '{value} ({units})',
         'column_header_default_key': 'name',
         'column_header_pattern': r'(?P<name>[^][)(]+)(\s+\((?P<units>.+)\))?(\s+\[(?P<notes>.+)\])?$',
-        'column_header_template': '{name} ({units}) [{notes}]'
+        'column_header_template': '{name} ({units}) [{notes}]',
+        'missing_value_key': 'missing_value'
     }
 
     def __init__(self, metadata=None, data=None):
@@ -338,11 +339,72 @@ class Reader(object):
 
         return self.data
 
+    def _get_type_cast_missing_value(self):
+        """
+        Cast a string representation of the missing_value to the most
+        appropriate type, if it is present in the extended header section
+
+        :returns: A suitably cast primitive type of the missing_value or None
+        :rtype: One of [int, float, str, None]
+        """
+
+        str_value = None
+        key = XCSV.DEFAULTS['missing_value_key']
+
+        if key in self.header:
+            str_value = self.header[key]
+
+            for func in [int, float]:
+                try:
+                    cast_value = func(str_value)
+                    return cast_value
+                except ValueError:
+                    continue
+
+        return str_value
+
+    def mask_missing_values(self):
+        """
+        Mask any missing values in the data
+
+        Missing values are defined by the missing_value header item
+
+        :returns: The data with any missing values replaced with NaN
+        :rtype: pandas.dataframe
+        """
+
+        missing_value = self._get_type_cast_missing_value()
+
+        if missing_value is not None:
+            self.data.mask(self.data == missing_value, inplace=True)
+
+        return self.data
+
+    def post_process_data(self):
+        """
+        Optionally post-process the data based on the header
+
+        The following keys are handled:
+
+        * missing_value: Use this to replace any matching data with NaN
+
+        :returns: The (possibly post-processed) data
+        :rtype: pandas.dataframe
+        """
+
+        self.mask_missing_values()
+
+        return self.data
+
     def read(self, parse_metadata=True):
         """
         Read the contents from the file
 
         The extended CSV object is available in the xcsv property
+
+        If `parse_metadata=True`, then the metadata are parsed.  Depending
+        on the presence of certain keys in the header section, these are used
+        to further post-process the data.  See `post_process_data()`.
 
         :param parse_metadata: Parse the header and column headers metadata
         :type parse_metadata: bool
@@ -352,6 +414,10 @@ class Reader(object):
 
         self.read_header(parse_metadata=parse_metadata)
         self.read_data(parse_metadata=parse_metadata)
+
+        if parse_metadata:
+            self.post_process_data()
+
         metadata = {'header': self.header, 'column_headers': self.column_headers}
         self.xcsv = XCSV(metadata=metadata, data=self.data)
 

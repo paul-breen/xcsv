@@ -54,6 +54,15 @@ def short_test_data():
 
     return content
 
+@pytest.fixture
+def short_missing_value_test_data():
+    in_file = base + '/data/short-missing-value-test-data.csv'
+
+    with xcsv.File(in_file) as f:
+        content = f.read()
+
+    return content
+
 def test_parse_tokens_dict():
     pattern = r'(?P<name>.+)\s+\((?P<units>.+)\)'
     s = 'a_name (some_units)'
@@ -371,6 +380,92 @@ def test_set_header_key_value():
     key, value = 'summary', 'The second summary paragraph.'
     f.set_header_key_value(key, value)
     assert f.header[key] == ['This dataset...','The second summary paragraph.']
+
+@pytest.mark.parametrize(['missing_value','expected'], [
+('999', 999),
+('-999', -999),
+('-999.0', -999),       # These are probably not what a user intends, but
+('0.0', 0),             # are what the function will return
+('999.99', 999.99),
+('-999.99', -999.99),
+('NA', 'NA')
+])
+def test__get_type_cast_missing_value(missing_value, expected):
+    f = xcsv.Reader()
+    key, value = xcsv.XCSV.DEFAULTS['missing_value_key'], missing_value
+    f.set_header_key_value(key, value)
+    actual = f._get_type_cast_missing_value()
+    assert actual == expected
+
+# Note ['NA','NaN',None] will always be converted to pd.NA by pandas itself
+@pytest.mark.parametrize(['missing_value','expected'], [
+('999',
+pd.DataFrame({
+    'time (year) [a]': [2012,2011,2010,2009,2008,2007,2006,2005,2004],
+    'depth (m)': [0.575,1.125,2.225,-999,None,-999.99,999.99,None,None]
+})),
+('-999',
+pd.DataFrame({
+    'time (year) [a]': [2012,2011,2010,2009,2008,2007,2006,2005,2004],
+    'depth (m)': [0.575,1.125,2.225,None,999,-999.99,999.99,None,None]
+})),
+# Again, this is probably not what a user intends, but will be converted
+# because of casting
+('-999.0',
+pd.DataFrame({
+    'time (year) [a]': [2012,2011,2010,2009,2008,2007,2006,2005,2004],
+    'depth (m)': [0.575,1.125,2.225,None,999,-999.99,999.99,None,None]
+})),
+('0.0',
+pd.DataFrame({
+    'time (year) [a]': [2012,2011,2010,2009,2008,2007,2006,2005,2004],
+    'depth (m)': [0.575,1.125,2.225,-999,999,-999.99,999.99,None,None]
+})),
+('999.99',
+pd.DataFrame({
+    'time (year) [a]': [2012,2011,2010,2009,2008,2007,2006,2005,2004],
+    'depth (m)': [0.575,1.125,2.225,-999,999,-999.99,None,None,None]
+})),
+('-999.99',
+pd.DataFrame({
+    'time (year) [a]': [2012,2011,2010,2009,2008,2007,2006,2005,2004],
+    'depth (m)': [0.575,1.125,2.225,-999,999,None,999.99,None,None]
+})),
+('NA',
+pd.DataFrame({
+    'time (year) [a]': [2012,2011,2010,2009,2008,2007,2006,2005,2004],
+    'depth (m)': [0.575,1.125,2.225,-999,999,-999.99,999.99,None,None]
+})),
+])
+def test_mask_missing_values(short_missing_value_test_data, missing_value, expected):
+    f = xcsv.Reader()
+    f.xcsv = short_missing_value_test_data
+    f.data = short_missing_value_test_data.data
+    f.header = short_missing_value_test_data.metadata['header']
+    f.column_headers = short_missing_value_test_data.metadata['column_headers']
+    key, value = xcsv.XCSV.DEFAULTS['missing_value_key'], missing_value
+    f.header[key] = value
+    f.mask_missing_values()
+    pd.testing.assert_frame_equal(f.data, expected, check_dtype=False)
+
+@pytest.mark.parametrize(['missing_value','label', 'idx'], [
+('-999.99', 'depth (m)', 5),
+('-999', 'depth (m)', 3),
+('999.99', 'depth (m)', 6),
+('999', 'depth (m)', 4),
+('NA', 'depth (m)', 7),
+('NaN', 'depth (m)', 8),
+])
+def test_masked_missing_value_isna(short_missing_value_test_data, missing_value, label, idx):
+    f = xcsv.Reader()
+    f.xcsv = short_missing_value_test_data
+    f.data = short_missing_value_test_data.data
+    f.header = short_missing_value_test_data.metadata['header']
+    f.column_headers = short_missing_value_test_data.metadata['column_headers']
+    key, value = xcsv.XCSV.DEFAULTS['missing_value_key'], missing_value
+    f.header[key] = value
+    f.mask_missing_values()
+    assert pd.isna(f.data[label][idx]) == True
 
 def test_reconstruct_header_lines_list_item():
     f = xcsv.Writer()

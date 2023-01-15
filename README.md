@@ -22,6 +22,7 @@ xcsv is a package for reading and writing extended CSV files.
 * Preferably include recommended attributes from [Attribute Convention for Data Discovery (ACDD)](https://wiki.esipfed.org/Attribute_Convention_for_Data_Discovery_1-3).
 * Preferably use units from [Unified Code for Units of Measure](https://ucum.org/ucum.html) and/or [Udunits](https://www.unidata.ucar.edu/software/udunits/).
 * Units in parentheses.
+* Certain special keys are used to [further process the data](#automated-post-processing-of-the-data), for example the `missing_value` key.
 
 ```
 # id: 1
@@ -54,6 +55,12 @@ time (year) [a],depth (m)
 ```
 2012,0.575
 ```
+
+#### Automated post-processing of the data
+
+Depending on the presence of special keys in the extended header section, these will be used to automatically post-process the data.  To turn off this automatic behaviour, either remove or rename these keys, or set `parse_metadata=False` when reading in the data.
+
+* `missing_value`:  This is used to define those values in the data that are to be considered as missing values.  This is typically a value that is outside the domain of the data such as `-999.99`, or can be a symbolic value such as `NA`.  All such values appearing in the data will be masked, appearing as an `NA` value to pandas (i.e. `pd.isna(value)` returns `True`).  Note that pandas itself will automatically do this for certain values regardless of this key, such as for the strings `NaN` or `NA`, or the constant `None`.
 
 ## Install
 
@@ -108,6 +115,48 @@ $ python3 simple_read.py example.csv
 1             2011      1.125
 2             2010      2.225
 ```
+
+#### Simple read and print with missing values
+
+If the above example header section included the following:
+
+```
+# missing_value: -999.99
+```
+
+and the data section looked like:
+
+```
+time (year) [a],depth (m)
+2012,0.575
+2011,1.125
+2010,2.225
+2009,-999
+2008,999
+2007,-999.99
+2006,999.99
+2005,NA
+2004,NaN
+```
+
+Running it would produce:
+
+```bash
+$ python3 simple_read.py missing_example.csv
+{'header': {'id': '1', 'title': 'The title', 'summary': ['This dataset...', 'The second summary paragraph.', 'The third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain'], 'authors': 'A B, C D', 'latitude': {'value': '-73.86', 'units': 'degree_north'}, 'longitude': {'value': '-65.46', 'units': 'degree_east'}, 'elevation': {'value': '1897', 'units': 'm a.s.l.'}, 'missing_value': '-999.99', '[a]': '2012 not a complete year'}, 'column_headers': {'time (year) [a]': {'name': 'time', 'units': 'year', 'notes': 'a'}, 'depth (m)': {'name': 'depth', 'units': 'm', 'notes': None}}}
+   time (year) [a]  depth (m)
+0             2012      0.575
+1             2011      1.125
+2             2010      2.225
+3             2009   -999.000
+4             2008    999.000
+5             2007        NaN
+6             2006    999.990
+7             2005        NaN
+8             2004        NaN
+```
+
+Note that the `-999.99` value has been automatically masked as a missing value (shown as `NaN` in the printed pandas `DataFrame`), as well as the `NA` and `NaN` strings in the original data, which pandas automatically masks itself, irrespective of the `missing_value` header item.
 
 #### Simple read and plot
 
