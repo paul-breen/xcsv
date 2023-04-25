@@ -38,12 +38,14 @@ class XCSV(object):
     """
 
     DEFAULTS = {
+        'file_header_keys': ['value', 'units'],
         'file_header_default_key': 'value',
         'file_header_pattern': r'(?P<value>.+)\s+\((?P<units>.+)\)$',
-        'file_header_template': '{value} ({units})',
+        'file_header_templates': ['{value}', '({units})'],
+        'column_header_keys': ['name', 'units', 'notes'],
         'column_header_default_key': 'name',
         'column_header_pattern': r'(?P<name>[^][)(]+)(\s+\((?P<units>.+)\))?(\s+\[(?P<notes>.+)\])?$',
-        'column_header_template': '{name} ({units}) [{notes}]',
+        'column_header_templates': ['{name}', '({units})', '[{notes}]'],
         'missing_value_key': 'missing_value'
     }
 
@@ -83,26 +85,50 @@ class XCSV(object):
         return _parse_tokens(s, pattern)
 
     @classmethod
+    def recombine_list_header_string(cls, l, sep='\n'):
+        """
+        Recombine the header value string from the given list
+        """
+
+        return sep.join(l)
+
+    @classmethod
+    def _reconstruct_header_string(cls, d, keys, templates, sep=' '):
+        """
+        Reconstruct the header value string from the given dict
+
+        If a member of the header dict is None, then it is not included
+        in the output value string.  This allows reconstructing the header
+        as it would have appeared in the original file.
+        """
+
+        template_components = []
+
+        for key, tmpl in zip(keys, templates):
+            if key in d and d[key] is not None:
+                template_components.append(tmpl)
+
+        template = sep.join(template_components)
+
+        return template.format(**d)
+
+    @classmethod
     def reconstruct_file_header_string(cls, d):
         """
         Reconstruct the header value string from the given dict
-        See `cls.DEFAULTS['file_header_template']`
+        See `cls.DEFAULTS['file_header_templates']`
         """
 
-        template = cls.DEFAULTS['file_header_template']
-
-        return template.format(**d)
+        return cls._reconstruct_header_string(d, cls.DEFAULTS['file_header_keys'], cls.DEFAULTS['file_header_templates'])
 
     @classmethod
     def reconstruct_column_header_string(cls, d):
         """
         Reconstruct the column header string from the given dict
-        See `cls.DEFAULTS['column_header_template']`
+        See `cls.DEFAULTS['column_header_templates']`
         """
 
-        template = cls.DEFAULTS['column_header_template']
-
-        return template.format(**d)
+        return cls._reconstruct_header_string(d, cls.DEFAULTS['column_header_keys'], cls.DEFAULTS['column_header_templates'])
 
     def get_column_header_name_map(self):
         """
@@ -151,6 +177,134 @@ class XCSV(object):
 
         col_map = self.get_column_header_label_map()
         self.data.rename(columns=col_map, inplace=True)
+
+    def get_metadata_item(self, key, section='header', default=None):
+        """
+        Get the value of the given key from the metadata dict,
+        or default if not found
+
+        The value can be a simple string, a list of strings, or a dict
+
+        By default, the key is looked for in the 'header' section.  Set
+        section='column_headers' to look in the 'column_headers' section
+        instead.
+
+        :param key: The header item key
+        :type key: str
+        :param section: The metadata section.
+        One of ['header','column_headers']
+        :type section: str
+        :param default: The value to return if no matching key exists
+        :type default: any
+        :returns: The value of the given key or default if not found
+        :rtype: any
+        """
+
+        if section not in ['header', 'column_headers']:
+            raise KeyError(f"Unknown metadata section: {section}")
+
+        try:
+            value = self.metadata[section][key]
+        except KeyError:
+            value = default
+
+        return value
+
+    def get_metadata_item_string(self, key, section='header', default=None):
+        """
+        Get the original string value of the given key from the metadata dict,
+        or default if not found
+
+        If the value is a dict, then it is reconstructed as a string,
+        as it would appear in the original file.
+
+        If the value is a list, then its elements are joined into a
+        newline-separated string, as it would appear in the original file.
+
+        Otherwise the key's value is returned as-is, a simple string.
+
+        By default, the key is looked for in the 'header' section.  Set
+        section='column_headers' to look in the 'column_headers' section
+        instead.
+
+        :param key: The header item key
+        :type key: str
+        :param section: The metadata section.
+        One of ['header','column_headers']
+        :type section: str
+        :param default: The value to return if no matching key exists
+        :type default: any
+        :returns: The simple value of the given key or default if not found
+        :rtype: any
+        """
+
+        if section == 'header':
+            reconstruct_func = XCSV.reconstruct_file_header_string
+        elif section == 'column_headers':
+            reconstruct_func = XCSV.reconstruct_column_header_string
+        else:
+            raise KeyError(f"Unknown metadata section: {section}")
+
+        try:
+            value = self.metadata[section][key]
+
+            if isinstance(value, dict):
+                value = reconstruct_func(value)
+
+            if isinstance(value, list):
+                value = XCSV.recombine_list_header_string(value)
+        except KeyError:
+            value = default
+
+        return value
+
+    def get_metadata_item_value(self, key, section='header', default=None):
+        """
+        Get the simple value of the given key from the metadata dict,
+        or default if not found
+
+        If the value is a dict, then the 'value' member for header items,
+        or 'name' member for column_headers items, is returned.
+
+        If the value is a list, then its elements are joined into a
+        newline-separated string, as it would appear in the original file.
+
+        Otherwise the key's value is returned as-is, a simple string.
+
+        By default, the key is looked for in the 'header' section.  Set
+        section='column_headers' to look in the 'column_headers' section
+        instead.
+
+        :param key: The header item key
+        :type key: str
+        :param section: The metadata section.
+        One of ['header','column_headers']
+        :type section: str
+        :param default: The value to return if no matching key exists
+        :type default: any
+        :returns: The simple value of the given key or default if not found
+        :rtype: any
+        """
+
+        if section == 'header':
+            subdict_key = self.DEFAULTS['file_header_default_key']
+        elif section == 'column_headers':
+            subdict_key = self.DEFAULTS['column_header_default_key']
+        else:
+            raise KeyError(f"Unknown metadata section: {section}")
+
+        try:
+            value = self.metadata[section][key]
+
+            if subdict_key in value:
+                value = value[subdict_key]
+
+            if isinstance(value, list):
+                value = XCSV.recombine_list_header_string(value)
+        except KeyError:
+            value = default
+
+        return value
 
 class Reader(object):
     """

@@ -187,7 +187,7 @@ def test_reconstruct_file_header_string():
 
 def test_reconstruct_file_header_string_value_only():
     d = {'value': 'a_value', 'units': None}
-    expected = 'a_value (None)'
+    expected = 'a_value'
     actual = xcsv.XCSV.reconstruct_file_header_string(d)
     assert actual == expected
 
@@ -197,9 +197,21 @@ def test_reconstruct_column_header_string():
     actual = xcsv.XCSV.reconstruct_column_header_string(d)
     assert actual == expected
 
+def test_reconstruct_column_header_string_name_and_units_only():
+    d = {'name': 'a_name', 'units': 'some_units', 'notes': None}
+    expected = 'a_name (some_units)'
+    actual = xcsv.XCSV.reconstruct_column_header_string(d)
+    assert actual == expected
+
+def test_reconstruct_column_header_string_name_and_notes_only():
+    d = {'name': 'a_name', 'units': None, 'notes': 'a_note'}
+    expected = 'a_name [a_note]'
+    actual = xcsv.XCSV.reconstruct_column_header_string(d)
+    assert actual == expected
+
 def test_reconstruct_column_header_string_name_only():
     d = {'name': 'a_name', 'units': None, 'notes': None}
-    expected = 'a_name (None) [None]'
+    expected = 'a_name'
     actual = xcsv.XCSV.reconstruct_column_header_string(d)
     assert actual == expected
 
@@ -276,6 +288,113 @@ def test_rename_column_headers_as_labels_empty(dummy_data):
     expected = ['time (year) [a]', 'depth (m)']
     f.rename_column_headers_as_labels()
     assert f.data.columns.to_list() == expected
+
+@pytest.mark.parametrize(['key','expected'], [
+('id', '1'),
+('summary', ['This dataset...','The second summary paragraph.','The third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain']),
+('latitude', {'value': '-73.86', 'units': 'degree_north'}),
+('non-existent', None)
+])
+def test_get_metadata_item(short_test_data, key, expected):
+    actual = short_test_data.get_metadata_item(key)
+    assert actual == expected
+
+@pytest.mark.parametrize(['key','expected', 'section'], [
+('depth (m)', {'name': 'depth', 'units': 'm', 'notes': None}, 'column_headers')
+])
+def test_get_metadata_item_different_section(short_test_data, key, expected, section):
+    actual = short_test_data.get_metadata_item(key, section=section)
+    assert actual == expected
+
+def test_get_metadata_item_non_existent_section(short_test_data):
+    key = 'id'
+    section = 'non-existent'
+
+    with pytest.raises(KeyError):
+        actual = short_test_data.get_metadata_item(key, section=section)
+
+@pytest.mark.parametrize(['key','default'], [
+('non-existent', ''),
+('non-existent', 0),
+('non-existent', 0.0),
+('non-existent', []),
+('non-existent', {})
+])
+def test_get_metadata_item_with_default(short_test_data, key, default):
+    actual = short_test_data.get_metadata_item(key, default=default)
+    assert actual == default
+
+@pytest.mark.parametrize(['key','expected'], [
+('id', '1'),
+('summary', 'This dataset...\nThe second summary paragraph.\nThe third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain'),
+('latitude', '-73.86 (degree_north)'),
+('non-existent', None)
+])
+def test_get_metadata_item_string(short_test_data, key, expected):
+    actual = short_test_data.get_metadata_item_string(key)
+    assert actual == expected
+
+@pytest.mark.parametrize(['key','expected', 'section'], [
+('depth (m)', 'depth (m)', 'column_headers'),
+('time (year) [a]', 'time (year) [a]', 'column_headers')
+])
+def test_get_metadata_item_string_different_section(short_test_data, key, expected, section):
+    actual = short_test_data.get_metadata_item_string(key, section=section)
+    assert actual == expected
+
+def test_get_metadata_item_string_non_existent_section(short_test_data):
+    key = 'id'
+    section = 'non-existent'
+
+    with pytest.raises(KeyError):
+        actual = short_test_data.get_metadata_item(key, section=section)
+
+@pytest.mark.parametrize(['key','default'], [
+('non-existent', ''),
+('non-existent', 0),
+('non-existent', 0.0),
+('non-existent', []),
+('non-existent', {})
+])
+def test_get_metadata_item_string_with_default(short_test_data, key, default):
+    actual = short_test_data.get_metadata_item_value(key, default=default)
+    assert actual == default
+
+@pytest.mark.parametrize(['key','expected'], [
+('id', '1'),
+('summary', 'This dataset...\nThe second summary paragraph.\nThe third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain'),
+('latitude', '-73.86'),
+('non-existent', None)
+])
+def test_get_metadata_item_value(short_test_data, key, expected):
+    actual = short_test_data.get_metadata_item_value(key)
+    assert actual == expected
+
+@pytest.mark.parametrize(['key','expected', 'section'], [
+('depth (m)', 'depth', 'column_headers'),
+('time (year) [a]', 'time', 'column_headers')
+])
+def test_get_metadata_item_value_different_section(short_test_data, key, expected, section):
+    actual = short_test_data.get_metadata_item_value(key, section=section)
+    assert actual == expected
+
+def test_get_metadata_item_value_non_existent_section(short_test_data):
+    key = 'id'
+    section = 'non-existent'
+
+    with pytest.raises(KeyError):
+        actual = short_test_data.get_metadata_item(key, section=section)
+
+@pytest.mark.parametrize(['key','default'], [
+('non-existent', ''),
+('non-existent', 0),
+('non-existent', 0.0),
+('non-existent', []),
+('non-existent', {})
+])
+def test_get_metadata_item_value_with_default(short_test_data, key, default):
+    actual = short_test_data.get_metadata_item_value(key, default=default)
+    assert actual == default
 
 def test_read_short_test_data(dummy_XCSV, short_test_data):
     assert short_test_data.metadata == dummy_XCSV.metadata
