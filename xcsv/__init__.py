@@ -32,6 +32,26 @@ def _parse_tokens(s, pattern):
 
     return tokens
 
+def _get_type_cast_value(str_value):
+    """
+    Cast a string representation of the given value to the most
+    appropriate primitive numeric type
+
+    :param str_value: The string representation of the numeric value
+    :type str_value: str
+    :returns: A suitably cast primitive type of the value or the string as-is
+    :rtype: One of [int, float, str]
+    """
+
+    for func in [int, float]:
+        try:
+            cast_value = func(str_value)
+            return cast_value
+        except ValueError:
+            continue
+
+    return str_value
+
 class XCSV(object):
     """
     Class for an extended CSV object
@@ -502,20 +522,13 @@ class Reader(object):
         :rtype: One of [int, float, str, None]
         """
 
-        str_value = None
+        value = None
         key = XCSV.DEFAULTS['missing_value_key']
 
         if key in self.header:
-            str_value = self.header[key]
+            value = _get_type_cast_value(self.header[key])
 
-            for func in [int, float]:
-                try:
-                    cast_value = func(str_value)
-                    return cast_value
-                except ValueError:
-                    continue
-
-        return str_value
+        return value
 
     def mask_missing_values(self):
         """
