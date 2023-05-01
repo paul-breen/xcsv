@@ -396,6 +396,21 @@ def test_get_metadata_item_value_with_default(short_test_data, key, default):
     actual = short_test_data.get_metadata_item_value(key, default=default)
     assert actual == default
 
+@pytest.mark.parametrize(['key','expected'], [
+('id', 1),
+('title', 'The title'),
+('summary', 'This dataset...\nThe second summary paragraph.\nThe third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain'),
+('authors', 'A B, C D'),
+('latitude', -73.86),
+('longitude', -65.46),
+('elevation', 1897),
+('[a]', '2012 not a complete year'),
+('non-existent', None)
+])
+def test_get_metadata_item_value_with_cast(short_test_data, key, expected):
+    actual = short_test_data.get_metadata_item_value(key, cast=True)
+    assert actual == expected
+
 def test_read_short_test_data(dummy_XCSV, short_test_data):
     assert short_test_data.metadata == dummy_XCSV.metadata
     assert short_test_data.data.all().all() == dummy_XCSV.data.all().all()

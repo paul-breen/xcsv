@@ -278,7 +278,7 @@ class XCSV(object):
 
         return value
 
-    def get_metadata_item_value(self, key, section='header', default=None):
+    def get_metadata_item_value(self, key, section='header', default=None, cast=False):
         """
         Get the simple value of the given key from the metadata dict,
         or default if not found
@@ -288,6 +288,9 @@ class XCSV(object):
 
         If the value is a list, then its elements are joined into a
         newline-separated string, as it would appear in the original file.
+
+        If cast is true, then an attempt is made to cast the value to the
+        most appropriate numeric primitive type.  One of [int, float].
 
         Otherwise the key's value is returned as-is, a simple string.
 
@@ -302,6 +305,9 @@ class XCSV(object):
         :type section: str
         :param default: The value to return if no matching key exists
         :type default: any
+        :param cast: Cast scalar numeric string value to most appropriate
+        primitive type.  One of [int, float]
+        :type cast: bool
         :returns: The simple value of the given key or default if not found
         :rtype: any
         """
@@ -321,6 +327,9 @@ class XCSV(object):
 
             if isinstance(value, list):
                 value = XCSV.recombine_list_header_string(value)
+
+            if cast:
+                value = _get_type_cast_value(value)
         except KeyError:
             value = default
 
