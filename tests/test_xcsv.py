@@ -63,6 +63,15 @@ def short_missing_value_test_data():
 
     return content
 
+@pytest.fixture
+def short_mislabelled_notes_test_data():
+    in_file = base + '/data/short-mislabelled-notes-test-data.csv'
+
+    with xcsv.File(in_file) as f:
+        content = f.read()
+
+    return content
+
 def test_parse_tokens_dict():
     pattern = r'(?P<name>.+)\s+\((?P<units>.+)\)'
     s = 'a_name (some_units)'
@@ -409,6 +418,19 @@ def test_get_metadata_item_value_with_default(short_test_data, key, default):
 ])
 def test_get_metadata_item_value_with_cast(short_test_data, key, expected):
     actual = short_test_data.get_metadata_item_value(key, cast=True)
+    assert actual == expected
+
+@pytest.mark.parametrize(['key','expected'], [
+('time (year) [a]', '2012 not a complete year'),
+('depth (m)', None),
+('qc [b]', None),
+# Now matches header note key, but no column header exists with this key
+('qc [mislabelled_b]', None),
+('event_marker', None),
+('non-existent', None)
+])
+def test_get_notes_for_column_header(short_mislabelled_notes_test_data, key, expected):
+    actual = short_mislabelled_notes_test_data.get_notes_for_column_header(key)
     assert actual == expected
 
 def test_read_short_test_data(dummy_XCSV, short_test_data):

@@ -335,6 +335,36 @@ class XCSV(object):
 
         return value
 
+    def get_notes_for_column_header(self, key, default=None):
+        """
+        Get the string value of the extended header section item that
+        corresponds to the 'notes' element of the given column header key,
+        or default if not found
+
+        :param key: The column_headers item key
+        :type key: str
+        :param default: The value to return if no matching key exists
+        :type default: any
+        :returns: The header value corresponding to the notes element of the
+        given column header key or default if not found
+        :rtype: any
+        """
+
+        value = default
+        column_header = self.get_metadata_item(key, section='column_headers')
+
+        if column_header is not None:
+            try:
+                notes_id = column_header['notes']
+            except KeyError:
+                notes_id = None
+
+            if notes_id is not None:
+                header_key = f"[{notes_id}]"
+                value = self.get_metadata_item_string(header_key)
+
+        return value
+
 class Reader(object):
     """
     Class for reading extended CSV data from a file
