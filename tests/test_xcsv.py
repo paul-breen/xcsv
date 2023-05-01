@@ -507,7 +507,10 @@ def test_set_header_key_value():
 ('0.0', 0),             # are what the function will return
 ('999.99', 999.99),
 ('-999.99', -999.99),
-('NA', 'NA')
+('NA', 'NA'),
+# missing_value should be a dimensionless, scalar, numeric value
+({'value': '-999.99', 'units': 'invalid'}, {'value': '-999.99', 'units': 'invalid'}),
+(['-999.99', '-999.99'], ['-999.99', '-999.99'])
 ])
 def test__get_type_cast_missing_value(missing_value, expected):
     f = xcsv.Reader()

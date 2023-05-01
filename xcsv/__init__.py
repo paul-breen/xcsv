@@ -47,7 +47,7 @@ def _get_type_cast_value(str_value):
         try:
             cast_value = func(str_value)
             return cast_value
-        except ValueError:
+        except (ValueError, TypeError):
             continue
 
     return str_value
