@@ -657,3 +657,46 @@ def test_reconstruct_header_lines_escaped_list_item_custom_delimiter():
     actual = '\n'.join(f.reconstruct_header_lines('# ', '/ ')) + '\n'
     assert actual == expected
 
+@pytest.mark.parametrize(['path','opts','expected'], [
+('/data/encoded_ascii.csv', {'encoding': 'ASCII'}, {'id': '123', 'title': 'The title'}),
+('/data/encoded_ascii.csv', {'encoding': 'UTF-8'}, {'id': '123', 'title': 'The title'}),
+('/data/encoded_iso-8859-15.csv', {'encoding': 'ISO-8859-15'}, {'id': '123', 'title': 'The title'}),
+('/data/encoded_utf-8.csv', {'encoding': 'UTF-8'}, {'id': '123', 'title': 'The title'}),
+('/data/encoded_utf-8_bom.csv', {'encoding': 'UTF-8'}, {'id': '123', 'title': 'The title'}),
+('/data/encoded_utf-8_bom.csv', {'encoding': 'UTF-8-SIG'}, {'id': '123', 'title': 'The title'}),
+('/data/encoded_utf-8_header_and_data_bom.csv', {'encoding': 'UTF-8'}, {'id': '123', 'title': 'The title'}),
+('/data/encoded_utf-8_header_and_data_bom.csv', {'encoding': 'UTF-8-SIG'}, {'id': '123', 'title': 'The title'}),
+('/data/encoded_ascii.csv', {}, {'id': '123', 'title': 'The title'}),
+('/data/encoded_utf-8.csv', {}, {'id': '123', 'title': 'The title'}),
+('/data/encoded_utf-8_bom.csv', {}, {'id': '123', 'title': 'The title'}),
+('/data/encoded_utf-8_header_and_data_bom.csv', {}, {'id': '123', 'title': 'The title'}),
+])
+def test_read_header_handling_bom(path, opts, expected):
+    in_file = base + path
+
+    with open(in_file, **opts) as fp:
+        f = xcsv.Reader(fp=fp)
+        header = f.read_header()
+        assert header == expected
+
+@pytest.mark.parametrize(['path','opts','expected'], [
+('/data/encoded_ascii.csv', {'encoding': 'ASCII'}, {'id': '123', 'title': 'The title'}),
+('/data/encoded_ascii.csv', {'encoding': 'UTF-8'}, {'id': '123', 'title': 'The title'}),
+('/data/encoded_iso-8859-15.csv', {'encoding': 'ISO-8859-15'}, {'id': '123', 'title': 'The title'}),
+('/data/encoded_utf-8.csv', {'encoding': 'UTF-8'}, {'id': '123', 'title': 'The title'}),
+('/data/encoded_utf-8_bom.csv', {'encoding': 'UTF-8'}, {'id': '123', 'title': 'The title'}),
+('/data/encoded_utf-8_bom.csv', {'encoding': 'UTF-8-SIG'}, {'id': '123', 'title': 'The title'}),
+('/data/encoded_utf-8_header_and_data_bom.csv', {'encoding': 'UTF-8'}, {'id': '123', 'title': 'The title'}),
+('/data/encoded_utf-8_header_and_data_bom.csv', {'encoding': 'UTF-8-SIG'}, {'id': '123', 'title': 'The title'}),
+('/data/encoded_ascii.csv', {}, {'id': '123', 'title': 'The title'}),
+('/data/encoded_utf-8.csv', {}, {'id': '123', 'title': 'The title'}),
+('/data/encoded_utf-8_bom.csv', {}, {'id': '123', 'title': 'The title'}),
+('/data/encoded_utf-8_header_and_data_bom.csv', {}, {'id': '123', 'title': 'The title'}),
+])
+def test_read_handling_bom(path, opts, expected):
+    in_file = base + path
+
+    with xcsv.File(in_file, **opts) as f:
+        content = f.read()
+        assert content.metadata['header'] == expected
+

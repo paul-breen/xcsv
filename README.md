@@ -5,7 +5,7 @@ xcsv is a package for reading and writing extended CSV files.
 ## Extended CSV format
 
 * Extended header section of parseable atttributes, introduced by '#'.
-* Header row of variable and units for each column.
+* Header row of variable name and units for each column.
 * Data rows.
 
 ### Example
@@ -61,6 +61,12 @@ time (year) [a],depth (m)
 Depending on the presence of special keys in the extended header section, these will be used to automatically post-process the data.  To turn off this automatic behaviour, either remove or rename these keys, or set `parse_metadata=False` when reading in the data.
 
 * `missing_value`:  This is used to define those values in the data that are to be considered as missing values.  This is typically a value that is outside the domain of the data such as `-999.99`, or can be a symbolic value such as `NA`.  All such values appearing in the data will be masked, appearing as an `NA` value to pandas (i.e. `pd.isna(value)` returns `True`).  Note that pandas itself will automatically do this for certain values regardless of this key, such as for the strings `NaN` or `NA`, or the constant `None`.
+
+#### A note on encodings
+
+The default character set encoding is UTF-8, without a Byte Order Mark (BOM).  If an extended CSV file has a different encoding, it can either be converted to UTF-8 (by using `iconv`, for example), or the encoding can be specified when opening the file (`xcsv.File(filename, encoding=encoding)`).
+
+If the encoding of a file is UTF-8 and it begins with a BOM, then the BOM is silently skipped.  This is necessary so that the extended header section is parsed correctly.
 
 ## Install
 

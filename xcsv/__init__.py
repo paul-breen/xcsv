@@ -9,8 +9,12 @@ __version__ = '0.4.0'
 
 import re
 import argparse
+import codecs
+import encodings
 
 import pandas as pd
+
+UTF_8_BOM = codecs.BOM_UTF8.decode('utf-8')
 
 def _parse_tokens(s, pattern):
     """
@@ -441,6 +445,9 @@ class Reader(object):
         Escaped form - Comment character, no key but delimiter, value:
         # : The second paragraph that may contain delimiter http://...
 
+        If the effective encoding is UTF-8 and the first line of the input
+        begins with a BOM, the BOM is silently skipped
+
         :param comment: Comment character of the extended header section
         :type comment: str
         :param delimiter: Key/value delimiter of the extended header section
@@ -454,7 +461,12 @@ class Reader(object):
         key, value = None, None
         self.fp.seek(0, 0)
 
-        for line in self.fp:
+        for i, line in enumerate(self.fp):
+            # UTF-8 encoded text may begin with an unnecessary BOM so skip it
+            if i == 0 and self.fp.encoding and encodings.normalize_encoding(self.fp.encoding.lower()) == encodings.normalize_encoding('utf-8'):
+                if line.startswith(UTF_8_BOM):
+                    line = line[len(UTF_8_BOM):]
+
             if line.startswith(comment):
                 try:
                     left, right = line.split(delimiter, maxsplit=1)
