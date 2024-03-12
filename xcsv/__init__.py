@@ -36,6 +36,27 @@ def _parse_tokens(s, pattern):
 
     return tokens
 
+def _strip_tokens(tokens):
+    """
+    Strip the values of a parsed tokens dict
+
+    :param tokens: The parsed tokens
+    :type tokens: dict or None
+    :returns: The parsed tokens with stripped values or None
+    :rtype: dict or None
+    """
+
+    if tokens:
+        for key in tokens:
+            # If the RE pattern failed to match an optional component,
+            # e.g. 'notes', then it will be None and so have no strip()
+            try:
+                tokens[key] = tokens[key].strip()
+            except AttributeError:
+                pass
+
+    return tokens
+
 def _get_type_cast_value(str_value):
     """
     Cast a string representation of the given value to the most
@@ -95,7 +116,7 @@ class XCSV(object):
 
         pattern = cls.DEFAULTS['file_header_pattern']
 
-        return _parse_tokens(s, pattern)
+        return _strip_tokens(_parse_tokens(s, pattern))
 
     @classmethod
     def parse_column_header_tokens(cls, s):
@@ -106,7 +127,7 @@ class XCSV(object):
 
         pattern = cls.DEFAULTS['column_header_pattern']
 
-        return _parse_tokens(s, pattern)
+        return _strip_tokens(_parse_tokens(s, pattern))
 
     @classmethod
     def recombine_list_header_string(cls, l, sep='\n'):

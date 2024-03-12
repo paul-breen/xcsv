@@ -72,18 +72,23 @@ def short_mislabelled_notes_test_data():
 
     return content
 
-def test_parse_tokens_dict():
-    pattern = r'(?P<name>.+)\s+\((?P<units>.+)\)'
-    s = 'a_name (some_units)'
-    expected = {'name': 'a_name', 'units': 'some_units'}
+@pytest.mark.parametrize(['s','pattern','expected'], [
+('a_name (some_units)', r'(?P<name>.+)\s+\((?P<units>.+)\)', {'name': 'a_name', 'units': 'some_units'}),
+('a free text string without any units', r'(?P<name>.+)\s+\((?P<units>.+)\)', None),
+('  (some_units)', r'(?P<name>.+)\s+\((?P<units>.+)\)', {'name': ' ', 'units': 'some_units'}),
+])
+def test_parse_tokens(s, pattern, expected):
     actual = xcsv._parse_tokens(s, pattern)
     assert actual == expected
 
-def test_parse_tokens_None():
-    pattern = r'(?P<name>.+)\s+\((?P<units>.+)\)'
-    s = 'a free text string without any units'
-    actual = xcsv._parse_tokens(s, pattern)
-    assert actual is None
+@pytest.mark.parametrize(['s','pattern','expected'], [
+('a_name (some_units)', r'(?P<name>.+)\s+\((?P<units>.+)\)', {'name': 'a_name', 'units': 'some_units'}),
+('a free text string without any units', r'(?P<name>.+)\s+\((?P<units>.+)\)', None),
+('  (some_units)', r'(?P<name>.+)\s+\((?P<units>.+)\)', {'name': '', 'units': 'some_units'}),
+])
+def test_strip_tokens(s, pattern, expected):
+    actual = xcsv._strip_tokens(xcsv._parse_tokens(s, pattern))
+    assert actual == expected
 
 def test_parse_file_header_tokens_dict():
     s = 'a_value (some_units)'
@@ -147,7 +152,7 @@ def test_parse_column_header_tokens_empty():
 
 def test_parse_column_header_tokens_space():
     s = ' '
-    expected = {'name': ' ', 'units': None, 'notes': None}
+    expected = {'name': '', 'units': None, 'notes': None}
     actual = xcsv.XCSV.parse_column_header_tokens(s)
     assert actual == expected
 
@@ -184,7 +189,7 @@ def test_parse_column_header_tokens_space_units_notes():
 def test_parse_column_header_tokens_spaces_units_notes():
     # At least one space is required as separator between name and units
     s = '  (some_units) [a_note]'
-    expected = {'name': ' ', 'units': 'some_units', 'notes': 'a_note'}
+    expected = {'name': '', 'units': 'some_units', 'notes': 'a_note'}
     actual = xcsv.XCSV.parse_column_header_tokens(s)
     assert actual == expected
 
