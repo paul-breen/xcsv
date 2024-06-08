@@ -14,7 +14,7 @@ xcsv is a package for reading and writing extended CSV files.
 
 * No leading/trailing whitespace.
 * Each line introduced by a comment ('#') character.
-* Each line contains a single header item.
+* Each line contains a single header item, or a single element of a multi-line list header item.
 * Key/value separator ': '.
 * Multi-line values naturally continued over to the next lines following the line introducing the key.
 * Continuation lines that contain the delimiter character in the value must be escaped by a leading delimiter.
@@ -22,6 +22,9 @@ xcsv is a package for reading and writing extended CSV files.
 * Preferably include recommended attributes from [Attribute Convention for Data Discovery (ACDD)](https://wiki.esipfed.org/Attribute_Convention_for_Data_Discovery_1-3).
 * Preferably use units from [Unified Code for Units of Measure](https://ucum.org/ucum.html) and/or [Udunits](https://www.unidata.ucar.edu/software/udunits/).
 * Units in parentheses.
+* Units are automatically parsed when they appear in parentheses at the end of a line.  Hence, if you have non-units text in parentheses at the end of the line (e.g. when expanding an acronym), then ensure that the line doesn't end with a closing parenthesis to avoid the text being incorrectly parsed as units.  A '.' would suffice.
+  + This line: `# latitude: -73.86 (degree_north)` would parse correctly as a value/units `dict`: `'latitude': {'value': '-73.86', 'units': 'degree_north'}`.
+  + This line: `# institution: BAS (British Antarctic Survey).` would correctly avoid being parsed as a value/units `dict` because of the '.' as the last character.
 * Certain special keys are used to [further process the data](#automated-post-processing-of-the-data), for example the `missing_value` key.
 
 ```
@@ -31,6 +34,7 @@ xcsv is a package for reading and writing extended CSV files.
 # The second summary paragraph.
 # : The third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain
 # authors: A B, C D
+# institution: BAS (British Antarctic Survey).
 # latitude: -73.86 (degree_north)
 # longitude: -65.46 (degree_east)
 # elevation: 1897 (m a.s.l.)
@@ -115,7 +119,7 @@ Running it would produce:
 
 ```bash
 $ python3 simple_read.py example.csv
-{'header': {'id': '1', 'title': 'The title', 'summary': ['This dataset...', 'The second summary paragraph.', 'The third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain'], 'authors': 'A B, C D', 'latitude': {'value': '-73.86', 'units': 'degree_north'}, 'longitude': {'value': '-65.46', 'units': 'degree_east'}, 'elevation': {'value': '1897', 'units': 'm a.s.l.'}, '[a]': '2012 not a complete year'}, 'column_headers': {'time (year) [a]': {'name': 'time', 'units': 'year', 'notes': 'a'}, 'depth (m)': {'name': 'depth', 'units': 'm', 'notes': None}}}
+{'header': {'id': '1', 'title': 'The title', 'summary': ['This dataset...', 'The second summary paragraph.', 'The third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain'], 'authors': 'A B, C D', 'institution': 'BAS (British Antarctic Survey).', 'latitude': {'value': '-73.86', 'units': 'degree_north'}, 'longitude': {'value': '-65.46', 'units': 'degree_east'}, 'elevation': {'value': '1897', 'units': 'm a.s.l.'}, '[a]': '2012 not a complete year'}, 'column_headers': {'time (year) [a]': {'name': 'time', 'units': 'year', 'notes': 'a'}, 'depth (m)': {'name': 'depth', 'units': 'm', 'notes': None}}}
    time (year) [a]  depth (m)
 0             2012      0.575
 1             2011      1.125
@@ -149,7 +153,7 @@ Running it would produce:
 
 ```bash
 $ python3 simple_read.py missing_example.csv
-{'header': {'id': '1', 'title': 'The title', 'summary': ['This dataset...', 'The second summary paragraph.', 'The third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain'], 'authors': 'A B, C D', 'latitude': {'value': '-73.86', 'units': 'degree_north'}, 'longitude': {'value': '-65.46', 'units': 'degree_east'}, 'elevation': {'value': '1897', 'units': 'm a.s.l.'}, 'missing_value': '-999.99', '[a]': '2012 not a complete year'}, 'column_headers': {'time (year) [a]': {'name': 'time', 'units': 'year', 'notes': 'a'}, 'depth (m)': {'name': 'depth', 'units': 'm', 'notes': None}}}
+{'header': {'id': '1', 'title': 'The title', 'summary': ['This dataset...', 'The second summary paragraph.', 'The third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain'], 'authors': 'A B, C D', 'institution': 'BAS (British Antarctic Survey).', 'latitude': {'value': '-73.86', 'units': 'degree_north'}, 'longitude': {'value': '-65.46', 'units': 'degree_east'}, 'elevation': {'value': '1897', 'units': 'm a.s.l.'}, 'missing_value': '-999.99', '[a]': '2012 not a complete year'}, 'column_headers': {'time (year) [a]': {'name': 'time', 'units': 'year', 'notes': 'a'}, 'depth (m)': {'name': 'depth', 'units': 'm', 'notes': None}}}
    time (year) [a]  depth (m)
 0             2012      0.575
 1             2011      1.125
