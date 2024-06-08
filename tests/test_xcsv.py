@@ -19,6 +19,7 @@ def dummy_metadata():
             'title': 'The title',
             'summary': ['This dataset...','The second summary paragraph.','The third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain'],
             'authors': 'A B, C D',
+            'institution': 'BAS (British Antarctic Survey).',
             'latitude': {'value': '-73.86', 'units': 'degree_north'},
             'longitude': {'value': '-65.46', 'units': 'degree_east'},
             'elevation': {'value': '1897', 'units': 'm a.s.l.'},
