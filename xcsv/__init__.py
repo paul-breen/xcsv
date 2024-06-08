@@ -130,12 +130,36 @@ class XCSV(object):
         return _strip_tokens(_parse_tokens(s, pattern))
 
     @classmethod
+    def _get_list_header_exception_context(cls, l):
+        """
+        Get some context for an exception message where a list header item
+        contains a dict
+        """
+
+        note = ''
+        candidates = [i for i in l if isinstance(i, dict)]
+
+        if candidates:
+            note = f"XCSV has parsed an element in a list header item as a value/units dict. This is unsupported in list header items. If this wasn't intended to be a value/units dict, then ensure that the line doesn't end with a closing parenthesis ')', either by removing the parentheses or adding some text after the closing parenthesis. A '.' would suffice."
+            d = candidates[0]
+            line = cls.reconstruct_file_header_string(d)
+            note += f"\nThe cause is this line: {line}\nwhich has been parsed as: {d}"
+
+        return note
+
+    @classmethod
     def recombine_list_header_string(cls, l, sep='\n'):
         """
         Recombine the header value string from the given list
         """
 
-        return sep.join(l)
+        try:
+            s = sep.join(l)
+        except TypeError as e:
+            note = cls._get_list_header_exception_context(l)
+            raise TypeError(note) from e
+
+        return s
 
     @classmethod
     def _reconstruct_header_string(cls, d, keys, templates, sep=' '):
@@ -435,6 +459,13 @@ class Reader(object):
                 self.header[key] = [prev_value, value]
         else:
             self.header[key] = value
+
+        # A value/units dict isn't supported in a list header item, so if
+        # we've just added one, raise an exception
+        if isinstance(self.header[key], list):
+            if isinstance(value, dict):
+                note = XCSV._get_list_header_exception_context(self.header[key])
+                raise TypeError(note)
 
     def read_header(self, comment='#', delimiter=':', parse_metadata=True):
         """

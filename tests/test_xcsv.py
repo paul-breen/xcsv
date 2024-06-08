@@ -193,6 +193,14 @@ def test_parse_column_header_tokens_spaces_units_notes():
     actual = xcsv.XCSV.parse_column_header_tokens(s)
     assert actual == expected
 
+@pytest.mark.parametrize(['l','expected'], [
+(['line 1', {'value': 'line 2', 'units': 'non units'}], 'line 2 (non units)'),
+(['line 1', 'line 2'], ''),
+])
+def test_get_list_header_exception_context(l, expected):
+    actual = xcsv.XCSV._get_list_header_exception_context(l)
+    assert expected in actual
+
 def test_reconstruct_file_header_string():
     d = {'value': 'a_value', 'units': 'some_units'}
     expected = 'a_value (some_units)'
