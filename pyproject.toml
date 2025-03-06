@@ -13,7 +13,7 @@ documentation = "https://github.com/paul-breen/xcsv/blob/main/README.md"
 python = "^3.8"
 pandas = "^1.4.2"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "^5.2"
 matplotlib = "^3.5.1"
 
