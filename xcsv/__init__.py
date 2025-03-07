@@ -107,6 +107,12 @@ class XCSV(object):
         self.metadata = metadata
         self.data = data
 
+    def __repr__(self):
+        return f'{self.__class__!s}({self.__dict__!r})'
+
+    def __str__(self):
+        return f'{self.__dict__!r}'
+
     @classmethod
     def parse_file_header_tokens(cls, s):
         """
