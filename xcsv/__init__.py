@@ -525,7 +525,7 @@ class Reader(object):
                 note = XCSV._get_list_header_exception_context(self.header[key])
                 raise TypeError(note)
 
-    def read_header(self, comment='#', delimiter=':', parse_metadata=True):
+    def read_header(self, parse_metadata=True, comment='#', delimiter=':'):
         """
         Read the header from the file
 
@@ -558,12 +558,12 @@ class Reader(object):
         If the effective encoding is UTF-8 and the first line of the input
         begins with a BOM, the BOM is silently skipped
 
+        :param parse_metadata: Parse each header item value
+        :type parse_metadata: bool
         :param comment: Comment character of the extended header section
         :type comment: str
         :param delimiter: Key/value delimiter of the extended header section
         :type delimiter: str
-        :param parse_metadata: Parse each header item value
-        :type parse_metadata: bool
         :returns: The header
         :rtype: dict
         """
@@ -610,20 +610,20 @@ class Reader(object):
 
         return self.header
 
-    def read_data(self, comment='#', parse_metadata=True):
+    def read_data(self, parse_metadata=True, **kwargs):
         """
         Read the data from the file
 
-        :param comment: Comment character of the extended header section
-        :type comment: str
         :param parse_metadata: Parse each column header value
         :type parse_metadata: bool
+        :param kwargs: Kwargs to pass to the pandas read_csv() function
+        :type kwargs: dict
         :returns: The data
         :rtype: pandas.dataframe
         """
 
         self.fp.seek(0, 0)
-        self.data = pd.read_csv(self.fp, comment=comment)
+        self.data = pd.read_csv(self.fp, **kwargs)
         self.column_headers = XCSV.parse_column_headers(self.data.columns, parse_metadata=parse_metadata)
 
         return self.data
@@ -678,7 +678,7 @@ class Reader(object):
 
         return self.data
 
-    def read(self, parse_metadata=True):
+    def read(self, parse_metadata=True, header_kwargs={'comment': '#', 'delimiter': ':'}, data_kwargs={'comment': '#'}):
         """
         Read the contents from the file
 
@@ -690,12 +690,17 @@ class Reader(object):
 
         :param parse_metadata: Parse the header and column headers metadata
         :type parse_metadata: bool
+        :param header_kwargs: Kwargs to pass to the read_header() function
+        :type header_kwargs: dict
+        :param data_kwargs: Kwargs to pass to the read_data() function,
+        and on to the pandas read_csv() function
+        :type data_kwargs: dict
         :returns: The extended CSV object
         :rtype: XCSV
         """
 
-        self.read_header(parse_metadata=parse_metadata)
-        self.read_data(parse_metadata=parse_metadata)
+        self.read_header(parse_metadata=parse_metadata, **header_kwargs)
+        self.read_data(parse_metadata=parse_metadata, **data_kwargs)
 
         if parse_metadata:
             self.post_process_data()

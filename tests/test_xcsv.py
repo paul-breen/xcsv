@@ -806,9 +806,23 @@ def writer_write_with_opts(content, header_opts, data_opts):
 
 @pytest.mark.parametrize(['path','header_opts','data_opts'], [
 ('/data/short-test-data.csv', {}, {}),
+('/data/short-test-data.csv', {'comment': '#'}, {}),
+('/data/short-test-data.csv', {}, {'comment': '#'}),
+('/data/short-test-data.csv', {'comment': '#'}, {'comment': '#'}),
+('/data/short-test-data.csv', {'comment': '#'}, {'comment': '#', 'parse_dates': ['time (year) [a]']}),
+])
+def test_reader_read_opts(path, header_opts, data_opts):
+    in_file = base + path
+    reader_read_with_opts(in_file, header_opts, data_opts)
+
+@pytest.mark.parametrize(['path','header_opts','data_opts'], [
+('/data/short-test-data.csv', {}, {}),
 ('/data/short-test-data.csv', {'comment': '# '}, {}),
 ('/data/short-test-data.csv', {}, {'index': False}),
 ('/data/short-test-data.csv', {'comment': '# '}, {'index': False}),
+('/data/short-test-data.csv', {'comment': '# '}, {'index': True}),
+('/data/short-test-data.csv', {'comment': '# '}, {'index': False, 'date_format': '%Y-%m-%dT%H:%M:%S', 'float_format': '%.4g'}),
+('/data/short-test-data.csv', {'comment': '# '}, {'index': False, 'date_format': '%Y-%m-%d', 'float_format': '%.6f'}),
 ])
 def test_writer_write_opts(path, header_opts, data_opts):
     in_file = base + path
