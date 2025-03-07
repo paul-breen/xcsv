@@ -727,6 +727,19 @@ class Writer(object):
         self.fp = fp
         self.xcsv = xcsv
 
+        self.store_components()
+
+    def store_components(self):
+        """
+        Extract the components of the extended CSV object and store in this
+        object's header, column_headers and data
+        """
+
+        if self.xcsv:
+            self.header = self.xcsv.metadata['header']
+            self.column_headers = self.xcsv.metadata['column_headers']
+            self.data = self.xcsv.data
+
     def format_header_line(self, comment, key, delimiter, value):
         """
         Format a header line from the given components
@@ -858,9 +871,7 @@ class Writer(object):
         if xcsv:
             self.xcsv = xcsv
 
-        self.header = self.xcsv.metadata['header']
-        self.column_headers = self.xcsv.metadata['column_headers']
-        self.data = self.xcsv.data
+        self.store_components()
 
         self.write_header()
         self.write_data()
