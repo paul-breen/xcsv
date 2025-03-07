@@ -194,6 +194,28 @@ def test_parse_column_header_tokens_spaces_units_notes():
     actual = xcsv.XCSV.parse_column_header_tokens(s)
     assert actual == expected
 
+@pytest.mark.parametrize(['cols','parse_metadata','expected'], [
+(pd.Index(['time (year)', 'depth (m)'], dtype='object'), True, {'time (year)': {'name': 'time', 'units': 'year', 'notes': None}, 'depth (m)': {'name': 'depth', 'units': 'm', 'notes': None}}),
+(['time (year)', 'depth (m)'], True, {'time (year)': {'name': 'time', 'units': 'year', 'notes': None}, 'depth (m)': {'name': 'depth', 'units': 'm', 'notes': None}}),
+(pd.Index(['time (year) [a]', 'depth (m)'], dtype='object'), True, {'time (year) [a]': {'name': 'time', 'units': 'year', 'notes': 'a'}, 'depth (m)': {'name': 'depth', 'units': 'm', 'notes': None}}),
+# The (unexpected) token will mess up the units parsing
+(pd.Index(['time (year) [a] (unexpected)', 'depth (m)'], dtype='object'), True, {'time (year) [a] (unexpected)': {'name': 'time', 'units': 'year) [a] (unexpected', 'notes': None}, 'depth (m)': {'name': 'depth', 'units': 'm', 'notes': None}}),
+(pd.Index(['time (year)', 'depth (m)'], dtype='object'), False, {'time (year)': {'name': 'time (year)'}, 'depth (m)': {'name': 'depth (m)'}}),
+])
+def test_parse_column_headers(cols, parse_metadata, expected):
+    actual = xcsv.XCSV.parse_column_headers(cols, parse_metadata=parse_metadata)
+    assert expected == actual
+
+@pytest.mark.parametrize(['parse_metadata','expected'], [
+(True, {'time (year) [a]': {'name': 'time', 'units': 'year', 'notes': 'a'}, 'depth (m)': {'name': 'depth', 'units': 'm', 'notes': None}}),
+(False, {'time (year) [a]': {'name': 'time (year) [a]'}, 'depth (m)': {'name': 'depth (m)'}}),
+])
+def test_store_column_headers(dummy_XCSV, parse_metadata, expected):
+    f = dummy_XCSV
+    actual = f.store_column_headers(parse_metadata=parse_metadata)
+    assert expected == f.metadata['column_headers']
+    assert expected == actual
+
 @pytest.mark.parametrize(['l','expected'], [
 (['line 1', {'value': 'line 2', 'units': 'non units'}], 'line 2 (non units)'),
 (['line 1', 'line 2'], ''),

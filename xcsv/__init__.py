@@ -130,6 +130,29 @@ class XCSV(object):
         return _strip_tokens(_parse_tokens(s, pattern))
 
     @classmethod
+    def parse_column_headers(cls, cols, parse_metadata=True):
+        """
+        Parse each of the given column header strings from the cols list
+        See `parse_column_header_tokens()`
+        """
+
+        column_headers = {}
+        def_key = cls.DEFAULTS['column_header_default_key']
+
+        for col in cols:
+            if parse_metadata:
+                tokens = cls.parse_column_header_tokens(col)
+
+                try:
+                    column_headers[col] = tokens
+                except KeyError:
+                    pass
+            else:
+                column_headers[col] = {def_key: col}
+
+        return column_headers
+
+    @classmethod
     def _get_list_header_exception_context(cls, l):
         """
         Get some context for an exception message where a list header item
@@ -246,6 +269,41 @@ class XCSV(object):
 
         col_map = self.get_column_header_label_map()
         self.data.rename(columns=col_map, inplace=True)
+
+    def store_column_headers(self, parse_metadata=True):
+        """
+        Store supplementary metadata from the column headers
+
+        The column headers look like:
+
+        nm1 (u1),nm2 (u2) [nt2],nm3 [nt3],nm4
+
+        where each column key is the whole string for that column,
+        e.g., k1 = f'{nm1} ({u1})' , k2 = f'{nm2} ({u2}) [{nt2}]', and so on.
+
+        When `parse_metadata=True`, this will result in:
+
+        {k1: {'name': nm1, 'units': u1, 'notes': None},
+         k2: {'name': nm2, 'units': u2, 'notes': nt2},
+         k3: {'name': nm3, 'units': None, 'notes': nt3},
+         k4: {'name': nm4, 'units': None, 'notes': None}}
+
+        whereas with `parse_metadata=False`, this will result in:
+
+        {k1: {'name': k1, 'units': None, 'notes': None},
+         k2: {'name': k2, 'units': None, 'notes': None},
+         k3: {'name': k3, 'units': None, 'notes': None},
+         k4: {'name': k4, 'units': None, 'notes': None}}
+
+        :param parse_metadata: Parse each column header value
+        :type parse_metadata: bool
+        :returns: The column header metadata
+        :rtype: dict
+        """
+
+        self.metadata['column_headers'] = XCSV.parse_column_headers(self.data.columns, parse_metadata=parse_metadata)
+
+        return self.metadata['column_headers']
 
     def get_metadata_item(self, key, section='header', default=None):
         """
@@ -552,52 +610,6 @@ class Reader(object):
 
         return self.header
 
-    def _store_column_headers(self, parse_metadata=True):
-        """
-        Store supplementary metadata from the column headers
-
-        The column headers look like:
-
-        nm1 (u1),nm2 (u2) [nt2],nm3 [nt3],nm4
-
-        where each column key is the whole string for that column,
-        e.g., k1 = f'{nm1} ({u1})' , k2 = f'{nm2} ({u2}) [{nt2}]', and so on.
-
-        When `parse_metadata=True`, this will result in:
-
-        {k1: {'name': nm1, 'units': u1, 'notes': None},
-         k2: {'name': nm2, 'units': u2, 'notes': nt2},
-         k3: {'name': nm3, 'units': None, 'notes': nt3},
-         k4: {'name': nm4, 'units': None, 'notes': None}}
-
-        whereas with `parse_metadata=False`, this will result in:
-
-        {k1: {'name': k1, 'units': None, 'notes': None},
-         k2: {'name': k2, 'units': None, 'notes': None},
-         k3: {'name': k3, 'units': None, 'notes': None},
-         k4: {'name': k4, 'units': None, 'notes': None}}
-
-        :param parse_metadata: Parse each column header value
-        :type parse_metadata: bool
-        :returns: The column header metadata
-        :rtype: dict
-        """
-
-        def_key = XCSV.DEFAULTS['column_header_default_key']
-
-        for col in self.data.columns:
-            if parse_metadata:
-                tokens = XCSV.parse_column_header_tokens(col)
-
-                try:
-                    self.column_headers[col] = tokens
-                except KeyError:
-                    pass
-            else:
-                self.column_headers[col] = {def_key: col}
-
-        return self.column_headers
-
     def read_data(self, comment='#', parse_metadata=True):
         """
         Read the data from the file
@@ -612,7 +624,7 @@ class Reader(object):
 
         self.fp.seek(0, 0)
         self.data = pd.read_csv(self.fp, comment=comment)
-        self._store_column_headers(parse_metadata=parse_metadata)
+        self.column_headers = XCSV.parse_column_headers(self.data.columns, parse_metadata=parse_metadata)
 
         return self.data
 
