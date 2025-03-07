@@ -839,19 +839,21 @@ class Writer(object):
 
         return self.header
 
-    def write_data(self):
+    def write_data(self, **kwargs):
         """
         Write the data to the file
 
+        :param kwargs: Kwargs to pass to the DataFrame to_csv() function
+        :type kwargs: dict
         :returns: The data
         :rtype: pandas.dataframe
         """
 
-        self.data.to_csv(self.fp, index=False)
+        self.data.to_csv(self.fp, **kwargs)
 
         return self.data
 
-    def write(self, fp=None, xcsv=None):
+    def write(self, fp=None, xcsv=None, header_kwargs={'comment': '# ', 'delimiter': ': '}, data_kwargs={'index': False}):
         """
         Write the contents to the file
 
@@ -861,6 +863,11 @@ class Writer(object):
         :param xcsv: The extended CSV object to be written out.  If not
         provided here, then it should have been set in the constructor
         :type xcsv: XCSV
+        :param header_kwargs: Kwargs to pass to the write_header() function
+        :type header_kwargs: dict
+        :param data_kwargs: Kwargs to pass to the write_data() function,
+        and on to the DataFrame to_csv() function
+        :type data_kwargs: dict
         :returns: The extended CSV object
         :rtype: XCSV
         """
@@ -873,8 +880,8 @@ class Writer(object):
 
         self.store_components()
 
-        self.write_header()
-        self.write_data()
+        self.write_header(**header_kwargs)
+        self.write_data(**data_kwargs)
 
         return self.xcsv
 

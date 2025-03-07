@@ -1,5 +1,7 @@
 import os
 import io
+import tempfile
+import hashlib
 
 import pytest
 import pandas as pd
@@ -735,4 +737,84 @@ def test_read_handling_bom(path, opts, expected):
     with xcsv.File(in_file, **opts) as f:
         content = f.read()
         assert content.metadata['header'] == expected
+
+def compare_original_with_written(in_file, **opts):
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        out_file = tmp_dir + '/out.csv'
+
+        with xcsv.File(in_file, **opts) as f:
+            content = f.read()
+
+        # Write out the read-in data, as-is.  These should be identical, as
+        # long as all values in a column are of the same type.
+        # For example, if a column contains floats and integers, the output
+        # data will be formatted as floats and so may introduce small
+        # differences, e.g. -1 will become -1.0
+        with xcsv.File(out_file, mode='w', **opts) as f:
+            f.write(xcsv=content)
+
+        # Compare the original and the written out files
+        with open(in_file, 'rb') as fp:
+            hash1 = hashlib.sha1(fp.read()).hexdigest()
+
+        with open(out_file, 'rb') as fp:
+            hash2 = hashlib.sha1(fp.read()).hexdigest()
+
+    return (hash1, hash2)
+
+@pytest.mark.parametrize(['path','opts'], [
+('/data/short-test-data.csv', {}),
+])
+def test_written_matches_read(path, opts):
+    in_file = base + path
+
+    hash1, hash2 = compare_original_with_written(in_file, **opts)
+    assert hash1 == hash2
+
+def reader_read_with_opts(in_file, header_opts, data_opts):
+    content = None
+
+    with open(in_file, mode='r') as fp:
+        reader = xcsv.Reader(fp=fp)
+
+        if header_opts and data_opts:
+            content = reader.read(header_kwargs=header_opts, data_kwargs=data_opts)
+        elif header_opts:
+            content = reader.read(header_kwargs=header_opts)
+        elif data_opts:
+            content = reader.read(data_kwargs=data_opts)
+        else:
+            content = reader.read()
+
+    return content
+
+def writer_write_with_opts(content, header_opts, data_opts):
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        out_file = tmp_dir + '/out.csv'
+
+        with open(out_file, mode='w') as fp:
+            writer = xcsv.Writer(fp=fp, xcsv=content)
+
+            if header_opts and data_opts:
+                writer.write(header_kwargs=header_opts, data_kwargs=data_opts)
+            elif header_opts:
+                writer.write(header_kwargs=header_opts)
+            elif data_opts:
+                writer.write(data_kwargs=data_opts)
+            else:
+                writer.write()
+
+@pytest.mark.parametrize(['path','header_opts','data_opts'], [
+('/data/short-test-data.csv', {}, {}),
+('/data/short-test-data.csv', {'comment': '# '}, {}),
+('/data/short-test-data.csv', {}, {'index': False}),
+('/data/short-test-data.csv', {'comment': '# '}, {'index': False}),
+])
+def test_writer_write_opts(path, header_opts, data_opts):
+    in_file = base + path
+
+    with xcsv.File(in_file) as f:
+        content = f.read()
+
+    writer_write_with_opts(content, header_opts, data_opts)
 
