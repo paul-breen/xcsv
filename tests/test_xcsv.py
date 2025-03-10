@@ -746,36 +746,6 @@ def get_file_hash(file):
 
     return fhash
 
-def compare_original_with_written(in_file, **opts):
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        out_file = tmp_dir + '/out.csv'
-
-        with xcsv.File(in_file, **opts) as f:
-            content = f.read()
-
-        # Write out the read-in data, as-is.  These should be identical, as
-        # long as all values in a column are of the same type.
-        # For example, if a column contains floats and integers, the output
-        # data will be formatted as floats and so may introduce small
-        # differences, e.g. -1 will become -1.0
-        with xcsv.File(out_file, mode='w', **opts) as f:
-            f.write(xcsv=content)
-
-        # Compare the original and the written out files
-        hash1 = get_file_hash(in_file)
-        hash2 = get_file_hash(out_file)
-
-    return (hash1, hash2)
-
-@pytest.mark.parametrize(['path','opts'], [
-('/data/short-test-data.csv', {}),
-])
-def test_written_matches_read(path, opts):
-    in_file = base + path
-
-    hash1, hash2 = compare_original_with_written(in_file, **opts)
-    assert hash1 == hash2
-
 def reader_read_csv_with_opts(in_file, header_opts, data_opts):
     content = None
 
@@ -806,6 +776,16 @@ def reader_read_json_with_opts(in_file, data_opts):
 
     return content
 
+def reader_read_with_opts(in_file, header_opts={}, data_opts={}):
+    content = None
+
+    if in_file.endswith('.csv'):
+        content = reader_read_csv_with_opts(in_file, header_opts, data_opts)
+    else:
+        content = reader_read_json_with_opts(in_file, data_opts)
+
+    return content
+
 def writer_write_csv_with_opts(out_file, content, header_opts, data_opts):
     with open(out_file, mode='w') as fp:
         writer = xcsv.Writer(fp=fp, xcsv=content)
@@ -827,6 +807,38 @@ def writer_write_json_with_opts(out_file, content, data_opts):
             writer.write_as_json(data_kwargs=data_opts)
         else:
             writer.write_as_json()
+
+def writer_write_with_opts(out_file, content, header_opts={}, data_opts={}):
+    if out_file.endswith('.csv'):
+        writer_write_csv_with_opts(out_file, content, header_opts, data_opts)
+    else:
+        writer_write_json_with_opts(out_file, content, data_opts)
+
+def convert(in_file, out_file, rh_opts={}, rd_opts={}, wh_opts={}, wd_opts={}):
+    content = reader_read_with_opts(in_file, header_opts=rh_opts, data_opts=rd_opts)
+    writer_write_with_opts(out_file, content, header_opts=wh_opts, data_opts=wd_opts)
+
+@pytest.mark.parametrize('path', [
+('/data/short-test-data.csv'),
+])
+def test_written_matches_read(path):
+    in_file = base + path
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        out_file = tmp_dir + '/out.csv'
+
+        # Write out the read-in data, as-is.  These should be identical, as
+        # long as all values in a column are of the same type.
+        # For example, if a column contains floats and integers, the output
+        # data will be formatted as floats and so may introduce small
+        # differences, e.g. -1 will become -1.0
+        content = reader_read_with_opts(in_file)
+        writer_write_with_opts(out_file, content)
+
+        # Compare the original and the written out files
+        hash1 = get_file_hash(in_file)
+        hash2 = get_file_hash(out_file)
+        assert hash1 == hash2
 
 @pytest.mark.parametrize(['path','header_opts','data_opts'], [
 ('/data/short-test-data.csv', {}, {}),
@@ -877,4 +889,34 @@ def test_writer_write_json_opts(path, data_opts):
     with tempfile.TemporaryDirectory() as tmp_dir:
         out_file = tmp_dir + '/out.json'
         writer_write_json_with_opts(out_file, content, data_opts)
+
+@pytest.mark.parametrize(['path','data_opts','compare'], [
+('/data/short-test-data.csv', {}, 'metadata'),
+('/data/short-test-data.csv', {'index': False, 'float_format': '%.4g'}, 'metadata'),
+('/data/short-test-data.csv', {'index': False, 'float_format': '%.4g'}, 'data'),
+('/data/short-test-data.csv', {'index': False, 'float_format': '%.4g'}, 'hash'),
+])
+def test_convert_recover_and_compare(path, data_opts, compare):
+    in_file = base + path
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_file = tmp_dir + '/tmp.json'
+        out_file = tmp_dir + '/out.csv'
+
+        convert(in_file, tmp_file)
+        convert(tmp_file, out_file, wh_opts={}, wd_opts=data_opts)
+
+        # Compare the original and the recovered files
+        if compare == 'header' or compare == 'data':
+            content1 = reader_read_with_opts(in_file)
+            content2 = reader_read_with_opts(out_file)
+
+        if compare == 'header':
+            assert content1.metadata == content2.metadata
+        elif compare == 'data':
+            assert content1.data.all().all() == content2.data.all().all()
+        elif compare == 'hash':
+            hash1 = get_file_hash(in_file)
+            hash2 = get_file_hash(out_file)
+            assert hash1 == hash2
 
