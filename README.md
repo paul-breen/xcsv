@@ -8,7 +8,7 @@ xcsv is a package for reading and writing extended CSV files.
 * Header row of variable name and units for each column.
 * Data rows.
 
-### Example
+### Discussion
 
 #### Extended header section
 
@@ -26,6 +26,8 @@ xcsv is a package for reading and writing extended CSV files.
   + This line: `# latitude: -73.86 (degree_north)` would parse correctly as a value/units `dict`: `'latitude': {'value': '-73.86', 'units': 'degree_north'}`.
   + This line: `# institution: BAS (British Antarctic Survey).` would correctly avoid being parsed as a value/units `dict` because of the '.' as the last character.
 * Certain special keys are used to [further process the data](#automated-post-processing-of-the-data), for example the `missing_value` key.
+
+##### Example extended header section
 
 ```
 # id: 1
@@ -48,6 +50,8 @@ xcsv is a package for reading and writing extended CSV files.
 * Units in parentheses.
 * Optional notes in square brackets, that reference an item in the extended header section.
 
+##### Example header row
+
 ```
 time (year) [a],depth (m)
 ```
@@ -55,6 +59,8 @@ time (year) [a],depth (m)
 #### Data row
 
 * No leading/trailing whitespace.
+
+##### Example data row
 
 ```
 2012,0.575
