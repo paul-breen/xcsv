@@ -738,6 +738,14 @@ def test_read_handling_bom(path, opts, expected):
         content = f.read()
         assert content.metadata['header'] == expected
 
+def get_file_hash(file):
+    fhash = None
+
+    with open(file, 'rb') as fp:
+        fhash = hashlib.sha1(fp.read()).hexdigest()
+
+    return fhash
+
 def compare_original_with_written(in_file, **opts):
     with tempfile.TemporaryDirectory() as tmp_dir:
         out_file = tmp_dir + '/out.csv'
@@ -754,11 +762,8 @@ def compare_original_with_written(in_file, **opts):
             f.write(xcsv=content)
 
         # Compare the original and the written out files
-        with open(in_file, 'rb') as fp:
-            hash1 = hashlib.sha1(fp.read()).hexdigest()
-
-        with open(out_file, 'rb') as fp:
-            hash2 = hashlib.sha1(fp.read()).hexdigest()
+        hash1 = get_file_hash(in_file)
+        hash2 = get_file_hash(out_file)
 
     return (hash1, hash2)
 
@@ -801,33 +806,27 @@ def reader_read_json_with_opts(in_file, data_opts):
 
     return content
 
-def writer_write_csv_with_opts(content, header_opts, data_opts):
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        out_file = tmp_dir + '/out.csv'
+def writer_write_csv_with_opts(out_file, content, header_opts, data_opts):
+    with open(out_file, mode='w') as fp:
+        writer = xcsv.Writer(fp=fp, xcsv=content)
 
-        with open(out_file, mode='w') as fp:
-            writer = xcsv.Writer(fp=fp, xcsv=content)
+        if header_opts and data_opts:
+            writer.write(header_kwargs=header_opts, data_kwargs=data_opts)
+        elif header_opts:
+            writer.write(header_kwargs=header_opts)
+        elif data_opts:
+            writer.write(data_kwargs=data_opts)
+        else:
+            writer.write()
 
-            if header_opts and data_opts:
-                writer.write(header_kwargs=header_opts, data_kwargs=data_opts)
-            elif header_opts:
-                writer.write(header_kwargs=header_opts)
-            elif data_opts:
-                writer.write(data_kwargs=data_opts)
-            else:
-                writer.write()
+def writer_write_json_with_opts(out_file, content, data_opts):
+    with open(out_file, mode='w') as fp:
+        writer = xcsv.Writer(fp=fp, xcsv=content)
 
-def writer_write_json_with_opts(content, data_opts):
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        out_file = tmp_dir + '/out.json'
-
-        with open(out_file, mode='w') as fp:
-            writer = xcsv.Writer(fp=fp, xcsv=content)
-
-            if data_opts:
-                writer.write_as_json(data_kwargs=data_opts)
-            else:
-                writer.write_as_json()
+        if data_opts:
+            writer.write_as_json(data_kwargs=data_opts)
+        else:
+            writer.write_as_json()
 
 @pytest.mark.parametrize(['path','header_opts','data_opts'], [
 ('/data/short-test-data.csv', {}, {}),
@@ -855,7 +854,9 @@ def test_writer_write_csv_opts(path, header_opts, data_opts):
     with xcsv.File(in_file) as f:
         content = f.read()
 
-    writer_write_csv_with_opts(content, header_opts, data_opts)
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        out_file = tmp_dir + '/out.csv'
+        writer_write_csv_with_opts(out_file, content, header_opts, data_opts)
 
 @pytest.mark.parametrize(['path','data_opts'], [
 ('/data/short-test-data.json', {}),
@@ -873,5 +874,7 @@ def test_writer_write_json_opts(path, data_opts):
     with xcsv.File(in_file) as f:
         content = f.read()
 
-    writer_write_json_with_opts(content, data_opts)
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        out_file = tmp_dir + '/out.json'
+        writer_write_json_with_opts(out_file, content, data_opts)
 
