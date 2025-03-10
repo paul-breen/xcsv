@@ -108,6 +108,7 @@ Read in a file and print the contents to `stdout`.  This shows how the contents 
 
 ```python
 import argparse
+import pprint
 
 import xcsv
 
@@ -117,7 +118,7 @@ args = parser.parse_args()
 
 with xcsv.File(args.filename) as f:
     content = f.read()
-    print(content.metadata)
+    pprint.pp(content.metadata)
     print(content.data)
 ```
 
@@ -125,7 +126,24 @@ Running it would produce:
 
 ```bash
 $ python3 simple_read.py example.csv
-{'header': {'id': '1', 'title': 'The title', 'summary': ['This dataset...', 'The second summary paragraph.', 'The third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain'], 'authors': 'A B, C D', 'institution': 'BAS (British Antarctic Survey).', 'latitude': {'value': '-73.86', 'units': 'degree_north'}, 'longitude': {'value': '-65.46', 'units': 'degree_east'}, 'elevation': {'value': '1897', 'units': 'm a.s.l.'}, '[a]': '2012 not a complete year'}, 'column_headers': {'time (year) [a]': {'name': 'time', 'units': 'year', 'notes': 'a'}, 'depth (m)': {'name': 'depth', 'units': 'm', 'notes': None}}}
+{'header': {'id': '1',
+            'title': 'The title',
+            'summary': ['This dataset...',
+                        'The second summary paragraph.',
+                        'The third summary paragraph.  Escaped because it '
+                        'contains the delimiter in a URL https://dummy.domain'],
+            'authors': 'A B, C D',
+            'institution': 'BAS (British Antarctic Survey).',
+            'latitude': {'value': '-73.86', 'units': 'degree_north'},
+            'longitude': {'value': '-65.46', 'units': 'degree_east'},
+            'elevation': {'value': '1897', 'units': 'm a.s.l.'},
+            '[a]': '2012 not a complete year'},
+ 'column_headers': {'time (year) [a]': {'name': 'time',
+                                        'units': 'year',
+                                        'notes': 'a'},
+                    'depth (m)': {'name': 'depth',
+                                  'units': 'm',
+                                  'notes': None}}}
    time (year) [a]  depth (m)
 0             2012      0.575
 1             2011      1.125
@@ -159,7 +177,25 @@ Running it would produce:
 
 ```bash
 $ python3 simple_read.py missing_example.csv
-{'header': {'id': '1', 'title': 'The title', 'summary': ['This dataset...', 'The second summary paragraph.', 'The third summary paragraph.  Escaped because it contains the delimiter in a URL https://dummy.domain'], 'authors': 'A B, C D', 'institution': 'BAS (British Antarctic Survey).', 'latitude': {'value': '-73.86', 'units': 'degree_north'}, 'longitude': {'value': '-65.46', 'units': 'degree_east'}, 'elevation': {'value': '1897', 'units': 'm a.s.l.'}, 'missing_value': '-999.99', '[a]': '2012 not a complete year'}, 'column_headers': {'time (year) [a]': {'name': 'time', 'units': 'year', 'notes': 'a'}, 'depth (m)': {'name': 'depth', 'units': 'm', 'notes': None}}}
+{'header': {'id': '1',
+            'title': 'The title',
+            'summary': ['This dataset...',
+                        'The second summary paragraph.',
+                        'The third summary paragraph.  Escaped because it '
+                        'contains the delimiter in a URL https://dummy.domain'],
+            'authors': 'A B, C D',
+            'institution': 'BAS (British Antarctic Survey).',
+            'latitude': {'value': '-73.86', 'units': 'degree_north'},
+            'longitude': {'value': '-65.46', 'units': 'degree_east'},
+            'elevation': {'value': '1897', 'units': 'm a.s.l.'},
+            'missing_value': '-999.999',
+            '[a]': '2012 not a complete year'},
+ 'column_headers': {'time (year) [a]': {'name': 'time',
+                                        'units': 'year',
+                                        'notes': 'a'},
+                    'depth (m)': {'name': 'depth',
+                                  'units': 'm',
+                                  'notes': None}}}
    time (year) [a]  depth (m)
 0             2012      0.575
 1             2011      1.125
