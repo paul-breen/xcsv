@@ -254,3 +254,87 @@ with xcsv.File(args.out_filename, mode='w') as f:
     f.write(xcsv=content)
 ```
 
+#### Construct an XCSV object from data
+
+Construct the metadata and data as python objects and combine into an XCSV object:
+
+```python
+import pprint
+
+import pandas as pd
+
+import xcsv
+
+# Construct the header dict and data pandas DataFrame
+header = {
+    'id': '123',
+    'title': 'The dataset',
+    'summary': 'This dataset comprises 10 files',
+    'longitude': {'value': '-73.06', 'units': 'degree_east'},
+    'latitude': {'value': '-74.33', 'units': 'degree_north'}
+}
+data = pd.DataFrame({
+    'time (day)': [1,2,3,4,5],
+    'temperature (deg_C)': [-3.5,-3.2,-2.9,-3.1,-2.8]
+})
+
+# Add the header and a placeholder for the column headers to the metadata dict
+metadata = {'header': header, 'column_headers': {}}
+
+content = xcsv.XCSV(metadata=metadata, data=data)
+
+# Parse the column headers from the DataFrame and store in
+# content.metadata['column_headers']
+content.store_column_headers()
+
+pprint.pp(content.metadata)
+print(content.data)
+```
+
+Running it would produce:
+
+```bash
+$ python3 construct_xcsv.py
+{'header': {'id': '123',
+            'title': 'The dataset',
+            'summary': 'This dataset comprises 10 files',
+            'longitude': {'value': '-73.06', 'units': 'degree_east'},
+            'latitude': {'value': '-74.33', 'units': 'degree_north'}},
+ 'column_headers': {'time (day)': {'name': 'time',
+                                   'units': 'day',
+                                   'notes': None},
+                    'temperature (deg_C)': {'name': 'temperature',
+                                            'units': 'deg_C',
+                                            'notes': None}}}
+   time (day)  temperature (deg_C)
+0           1                 -3.5
+1           2                 -3.2
+2           3                 -2.9
+3           4                 -3.1
+4           5                 -2.8
+```
+
+Instead of printing to stdout, we could write the constructed XCSV object as an XCSV file:
+
+```python
+    with xcsv.File('out.csv', mode='w') as f:
+        f.write(content)
+```
+
+which would produce:
+
+```bash
+$ cat out.csv
+# id: 123
+# title: The dataset
+# summary: This dataset comprises 10 files
+# longitude: -73.06 (degree_east)
+# latitude: -74.33 (degree_north)
+time (day),temperature (deg_C)
+1,-3.5
+2,-3.2
+3,-2.9
+4,-3.1
+5,-2.8
+```
+
