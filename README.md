@@ -100,6 +100,20 @@ and the `data` attribute is a `pandas.DataFrame`, and so has all the features of
 
 The package also has a `Reader` class for reading an extended CSV file into an `XCSV` object, and similarly a `Writer` class for writing an `XCSV` object to a file in the extended CSV format.  In addition there is a `File` class that provides a convenient context manager for reading and writing these files.
 
+### Integrating the package with other software
+
+Even though the primary focus of the xcsv package is to produce self-describing tabular datasets, it can also read and write serialised JSON views of an `XCSV` object.  This is most useful when integrating `XCSV` data into some other software workflow.
+
+To customise the integration when reading JSON data, any kwargs supported by `pandas.read_json()` can be passed in `data_kwargs` when calling `Reader.read_as_json()`.  Similarly when writing JSON data, any kwargs supported by `pandas.DataFrame.to_json()` can be passed in `data_kwargs` when calling `Writer.write_as_json()`.
+
+For example, the default serialisation form is the pandas default for DataFrames (`columns`), but any serialisation form can be used by specifying the `orient` kwarg:
+
+```python
+    with open('out.json', mode='w') as fp:
+        writer = xcsv.Writer(fp=fp, xcsv=content)
+        writer.write_as_json(data_kwargs={'orient': 'table'})
+```
+
 ### Examples
 
 #### Simple read and print
@@ -256,7 +270,7 @@ with xcsv.File(args.out_filename, mode='w') as f:
 
 #### Construct an XCSV object from data
 
-Construct the metadata and data as python objects and combine into an XCSV object:
+Construct the metadata and data as python objects and combine into an `XCSV` object:
 
 ```python
 import pprint
@@ -314,7 +328,7 @@ $ python3 construct_xcsv.py
 4           5                 -2.8
 ```
 
-Instead of printing to stdout, we could write the constructed XCSV object as an XCSV file:
+Instead of printing to stdout, we could write the constructed `XCSV` object as an XCSV file:
 
 ```python
     with xcsv.File('out.csv', mode='w') as f:
