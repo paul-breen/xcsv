@@ -771,7 +771,7 @@ def test_written_matches_read(path, opts):
     hash1, hash2 = compare_original_with_written(in_file, **opts)
     assert hash1 == hash2
 
-def reader_read_with_opts(in_file, header_opts, data_opts):
+def reader_read_csv_with_opts(in_file, header_opts, data_opts):
     content = None
 
     with open(in_file, mode='r') as fp:
@@ -788,7 +788,20 @@ def reader_read_with_opts(in_file, header_opts, data_opts):
 
     return content
 
-def writer_write_with_opts(content, header_opts, data_opts):
+def reader_read_json_with_opts(in_file, data_opts):
+    content = None
+
+    with open(in_file, mode='r') as fp:
+        reader = xcsv.Reader(fp=fp)
+
+        if data_opts:
+            content = reader.read_as_json(data_kwargs=data_opts)
+        else:
+            content = reader.read_as_json()
+
+    return content
+
+def writer_write_csv_with_opts(content, header_opts, data_opts):
     with tempfile.TemporaryDirectory() as tmp_dir:
         out_file = tmp_dir + '/out.csv'
 
@@ -804,6 +817,18 @@ def writer_write_with_opts(content, header_opts, data_opts):
             else:
                 writer.write()
 
+def writer_write_json_with_opts(content, data_opts):
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        out_file = tmp_dir + '/out.json'
+
+        with open(out_file, mode='w') as fp:
+            writer = xcsv.Writer(fp=fp, xcsv=content)
+
+            if data_opts:
+                writer.write_as_json(data_kwargs=data_opts)
+            else:
+                writer.write_as_json()
+
 @pytest.mark.parametrize(['path','header_opts','data_opts'], [
 ('/data/short-test-data.csv', {}, {}),
 ('/data/short-test-data.csv', {'comment': '#'}, {}),
@@ -811,9 +836,9 @@ def writer_write_with_opts(content, header_opts, data_opts):
 ('/data/short-test-data.csv', {'comment': '#'}, {'comment': '#'}),
 ('/data/short-test-data.csv', {'comment': '#'}, {'comment': '#', 'parse_dates': ['time (year) [a]']}),
 ])
-def test_reader_read_opts(path, header_opts, data_opts):
+def test_reader_read_csv_opts(path, header_opts, data_opts):
     in_file = base + path
-    reader_read_with_opts(in_file, header_opts, data_opts)
+    reader_read_csv_with_opts(in_file, header_opts, data_opts)
 
 @pytest.mark.parametrize(['path','header_opts','data_opts'], [
 ('/data/short-test-data.csv', {}, {}),
@@ -824,11 +849,29 @@ def test_reader_read_opts(path, header_opts, data_opts):
 ('/data/short-test-data.csv', {'comment': '# '}, {'index': False, 'date_format': '%Y-%m-%dT%H:%M:%S', 'float_format': '%.4g'}),
 ('/data/short-test-data.csv', {'comment': '# '}, {'index': False, 'date_format': '%Y-%m-%d', 'float_format': '%.6f'}),
 ])
-def test_writer_write_opts(path, header_opts, data_opts):
+def test_writer_write_csv_opts(path, header_opts, data_opts):
     in_file = base + path
 
     with xcsv.File(in_file) as f:
         content = f.read()
 
-    writer_write_with_opts(content, header_opts, data_opts)
+    writer_write_csv_with_opts(content, header_opts, data_opts)
+
+@pytest.mark.parametrize(['path','data_opts'], [
+('/data/short-test-data.json', {}),
+])
+def test_reader_read_json_opts(path, data_opts):
+    in_file = base + path
+    reader_read_json_with_opts(in_file, data_opts)
+
+@pytest.mark.parametrize(['path','data_opts'], [
+('/data/short-test-data.csv', {}),
+])
+def test_writer_write_json_opts(path, data_opts):
+    in_file = base + path
+
+    with xcsv.File(in_file) as f:
+        content = f.read()
+
+    writer_write_json_with_opts(content, data_opts)
 

@@ -11,6 +11,8 @@ import re
 import argparse
 import codecs
 import encodings
+import json
+import io
 
 import pandas as pd
 
@@ -716,6 +718,33 @@ class Reader(object):
 
         return self.xcsv
 
+    def read_as_json(self, data_kwargs={}):
+        """
+        Read the contents from the file as a JSON-serialized XCSV object
+
+        The extended CSV object is available in the xcsv property
+
+        :param data_kwargs: Kwargs to pass to the pandas read_json() function
+        :type data_kwargs: dict
+        :returns: The extended CSV object
+        :rtype: XCSV
+        """
+
+        # Load the JSON data, pull out the metadata dict, and store
+        obj = json.load(self.fp)
+        metadata = obj['metadata']
+        self.header = metadata['header']
+        self.column_headers = metadata['column_headers']
+
+        # Convert the data (pandas DataFrame) back to JSON and deserialize
+        jdata = json.dumps(obj['data'])
+        self.data = pd.read_json(io.StringIO(jdata), **data_kwargs)
+
+        # Combine the metadata and data into an XSV object
+        self.xcsv = XCSV(metadata=metadata, data=self.data)
+
+        return self.xcsv
+
 class Writer(object):
     """
     Class for writing extended CSV data to a file
@@ -893,6 +922,35 @@ class Writer(object):
 
         self.write_header(**header_kwargs)
         self.write_data(**data_kwargs)
+
+        return self.xcsv
+
+    def write_as_json(self, fp=None, xcsv=None, data_kwargs={}):
+        """
+        Write the contents to the file as a JSON-serialized XCSV object
+
+        :param fp: The open file object of the output file.  If not
+        provided here, then it should have been set in the constructor
+        :type fp: file object
+        :param xcsv: The extended CSV object to be written out.  If not
+        provided here, then it should have been set in the constructor
+        :type xcsv: XCSV
+        :param data_kwargs: Kwargs to pass to the DataFrame to_json() function
+        :type data_kwargs: dict
+        :returns: The extended CSV object
+        :rtype: XCSV
+        """
+
+        if fp:
+            self.fp = fp
+
+        if xcsv:
+            self.xcsv = xcsv
+
+        self.store_components()
+
+        jdata = json.loads(self.xcsv.data.to_json(None, **data_kwargs))
+        json.dump({'metadata': self.xcsv.metadata, 'data': jdata}, self.fp)
 
         return self.xcsv
 
