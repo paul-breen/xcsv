@@ -110,7 +110,7 @@ For example, the default serialisation form is the pandas default for DataFrames
 
 ```python
     with open('out.json', mode='w') as fp:
-        writer = xcsv.Writer(fp=fp, xcsv=content)
+        writer = xcsv.Writer(fp=fp, xcsv=dataset)
         writer.write_as_json(data_kwargs={'orient': 'table'})
 ```
 
@@ -131,9 +131,9 @@ parser.add_argument('filename', help='filename.csv')
 args = parser.parse_args()
 
 with xcsv.File(args.filename) as f:
-    content = f.read()
-    pprint.pp(content.metadata)
-    print(content.data)
+    dataset = f.read()
+    pprint.pp(dataset.metadata)
+    print(dataset.data)
 ```
 
 Running it would produce:
@@ -240,8 +240,8 @@ parser.add_argument('filename', help='filename.csv')
 args = parser.parse_args()
 
 with xcsv.File(args.filename) as f:
-    content = f.read()
-    content.data.plot(x='depth (m)', y='time (year) [a]')
+    dataset = f.read()
+    dataset.data.plot(x='depth (m)', y='time (year) [a]')
     plt.show()
 ```
 
@@ -260,12 +260,12 @@ parser.add_argument('out_filename', help='out_filename.csv')
 args = parser.parse_args()
 
 with xcsv.File(args.in_filename) as f:
-    content = f.read()
+    dataset = f.read()
 
 # Manipulate the data...
 
 with xcsv.File(args.out_filename, mode='w') as f:
-    f.write(xcsv=content)
+    f.write(xcsv=dataset)
 ```
 
 #### Construct an XCSV object from data
@@ -282,8 +282,8 @@ import xcsv
 # Construct the header dict and data pandas DataFrame
 header = {
     'id': '123',
-    'title': 'The dataset',
-    'summary': 'This dataset comprises 10 files',
+    'title': 'Temperature timeseries',
+    'summary': 'This dataset comprises temperature timeseries from...',
     'longitude': {'value': '-73.06', 'units': 'degree_east'},
     'latitude': {'value': '-74.33', 'units': 'degree_north'}
 }
@@ -295,14 +295,14 @@ data = pd.DataFrame({
 # Add the header and a placeholder for the column headers to the metadata dict
 metadata = {'header': header, 'column_headers': {}}
 
-content = xcsv.XCSV(metadata=metadata, data=data)
+dataset = xcsv.XCSV(metadata=metadata, data=data)
 
 # Parse the column headers from the DataFrame and store in
-# content.metadata['column_headers']
-content.store_column_headers()
+# dataset.metadata['column_headers']
+dataset.store_column_headers()
 
-pprint.pp(content.metadata)
-print(content.data)
+pprint.pp(dataset.metadata)
+print(dataset.data)
 ```
 
 Running it would produce:
@@ -310,8 +310,8 @@ Running it would produce:
 ```bash
 $ python3 construct_xcsv.py
 {'header': {'id': '123',
-            'title': 'The dataset',
-            'summary': 'This dataset comprises 10 files',
+            'title': 'Temperature timeseries',
+            'summary': 'This dataset comprises temperature timeseries from...',
             'longitude': {'value': '-73.06', 'units': 'degree_east'},
             'latitude': {'value': '-74.33', 'units': 'degree_north'}},
  'column_headers': {'time (day)': {'name': 'time',
@@ -332,7 +332,7 @@ Instead of printing to stdout, we could write the constructed `XCSV` object as a
 
 ```python
     with xcsv.File('out.csv', mode='w') as f:
-        f.write(content)
+        f.write(dataset)
 ```
 
 which would produce:
@@ -340,8 +340,8 @@ which would produce:
 ```bash
 $ cat out.csv
 # id: 123
-# title: The dataset
-# summary: This dataset comprises 10 files
+# title: Temperature timeseries
+# summary: This dataset comprises temperature timeseries from...
 # longitude: -73.06 (degree_east)
 # latitude: -74.33 (degree_north)
 time (day),temperature (deg_C)
