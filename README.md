@@ -188,7 +188,7 @@ $ python3 simple_read.py missing_example.csv
             'latitude': {'value': '-73.86', 'units': 'degree_north'},
             'longitude': {'value': '-65.46', 'units': 'degree_east'},
             'elevation': {'value': '1897', 'units': 'm a.s.l.'},
-            'missing_value': '-999.999',
+            'missing_value': '-999.99',
             '[a]': '2012 not a complete year'},
  'column_headers': {'time (year) [a]': {'name': 'time',
                                         'units': 'year',
