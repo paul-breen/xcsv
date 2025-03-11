@@ -581,10 +581,16 @@ class Reader(object):
         A continuation line can be expressed in two forms.
 
         Simple form - Comment character, no key or delimiter, value:
-        `# The second paragraph...`
+
+        ```
+        # The second paragraph...
+        ```
 
         Escaped form - Comment character, no key but delimiter, value:
-        `# : The second paragraph that may contain delimiter http://...`
+
+        ```
+        # : The second paragraph that may contain delimiter http://...
+        ```
 
         If the effective encoding is UTF-8 and the first line of the input
         begins with a BOM, the BOM is silently skipped
