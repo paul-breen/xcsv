@@ -7,7 +7,7 @@ readme = "README.md"
 license = "Apache-2.0"
 repository = "https://github.com/paul-breen/xcsv"
 homepage = "https://github.com/paul-breen/xcsv"
-documentation = "https://github.com/paul-breen/xcsv/blob/main/README.md"
+documentation = "https://paul-breen.github.io/xcsv/"
 
 [tool.poetry.dependencies]
 python = "^3.8"
