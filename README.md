@@ -23,8 +23,8 @@ xcsv is a package for reading and writing extended CSV files.
 * Preferably use units from [Unified Code for Units of Measure](https://ucum.org/ucum.html) and/or [Udunits](https://www.unidata.ucar.edu/software/udunits/).
 * Units in parentheses.
 * Units are automatically parsed when they appear in parentheses at the end of a line.  Hence, if you have non-units text in parentheses at the end of the line (e.g. when expanding an acronym), then ensure that the line doesn't end with a closing parenthesis to avoid the text being incorrectly parsed as units.  A '.' would suffice.
-  + This line: `# latitude: -73.86 (degree_north)` would parse correctly as a value/units `dict`: `'latitude': {'value': '-73.86', 'units': 'degree_north'}`.
-  + This line: `# institution: BAS (British Antarctic Survey).` would correctly avoid being parsed as a value/units `dict` because of the '.' as the last character.
+  + This line: `# latitude: -73.86 (degree_north)` would parse correctly as a value/units dict: `'latitude': {'value': '-73.86', 'units': 'degree_north'}`.
+  + This line: `# institution: BAS (British Antarctic Survey).` would correctly avoid being parsed as a value/units dict because of the '.' as the last character.
 * Certain special keys are used to [further process the data](#automated-post-processing-of-the-data), for example the `missing_value` key.
 
 ##### Example extended header section
@@ -70,7 +70,7 @@ time (year) [a],depth (m)
 
 Depending on the presence of special keys in the extended header section, these will be used to automatically post-process the data.  To turn off this automatic behaviour, either remove or rename these keys, or set `parse_metadata=False` when reading in the data.
 
-* `missing_value`:  This is used to define those values in the data that are to be considered as missing values.  This is typically a value that is outside the domain of the data such as `-999.99`, or can be a symbolic value such as `NA`.  All such values appearing in the data will be masked, appearing as an `NA` value to pandas (i.e. `pd.isna(value)` returns `True`).  Note that pandas itself will automatically do this for certain values regardless of this key, such as for the strings `NaN` or `NA`, or the constant `None`.
+* `missing_value`:  This is used to define those values in the data that are to be considered as missing values.  This is typically a value that is outside the domain of the data such as `-999.99`, or can be a symbolic value such as `NA`.  All such values appearing in the data will be masked, appearing as an `NA` value to pandas (i.e. `pd.isna(value) == True`).  Note that pandas itself will automatically do this for certain values regardless of this key, such as for the strings `NaN` or `NA`, or the constant `None`.
 
 #### A note on encodings
 
@@ -90,19 +90,19 @@ $ pip install xcsv
 
 The package has a general `XCSV` class, that has a `metadata` attribute that holds the parsed contents of the extended file header section and the parsed column headers from the data table, and a `data` attribute that holds the data table (including the column headers as-is).
 
-The `metadata` attribute is a `dict`, with the following general structure:
+The `metadata` attribute is a dict, with the following general structure:
 
 ```python
 {'header': {}, 'column_headers': {}}
 ```
 
-and the `data` attribute is a `pandas.DataFrame`, and so has all the features of the [pandas](https://pandas.pydata.org/docs/index.html) package.
+and the `data` attribute is a pandas DataFrame, and so has all the features of the [pandas](https://pandas.pydata.org/docs/index.html) package.
 
-The package also has a `Reader` class for reading an extended CSV file into an `XCSV` object, and similarly a `Writer` class for writing an `XCSV` object to a file in the extended CSV format.  In addition there is a `File` class that provides a convenient context manager for reading and writing these files.
+The package also has a `Reader` class for reading an extended CSV file into an XCSV object, and similarly a `Writer` class for writing an XCSV object to a file in the extended CSV format.  In addition there is a `File` class that provides a convenient context manager for reading and writing these files.
 
 ### Integrating the package with other software
 
-Even though the primary focus of the xcsv package is to produce self-describing tabular datasets, it can also read and write serialised JSON views of an `XCSV` object.  This is most useful when integrating `XCSV` data into some other software workflow.
+Even though the primary focus of the xcsv package is to produce self-describing tabular datasets, it can also read and write serialised JSON views of an XCSV object.  This is most useful when integrating XCSV data into some other software workflow.
 
 To customise the integration when reading JSON data, any kwargs supported by `pandas.read_json()` can be passed in `data_kwargs` when calling `Reader.read_as_json()`.  Similarly when writing JSON data, any kwargs supported by `pandas.DataFrame.to_json()` can be passed in `data_kwargs` when calling `Writer.write_as_json()`.
 
@@ -118,7 +118,7 @@ For example, the default serialisation form is the pandas default for DataFrames
 
 #### Simple read and print
 
-Read in a file and print the contents to `stdout`.  This shows how the contents of the extended CSV file are stored in the `XCSV` object.  Note how multi-line values, such as `summary` here, are stored in a list.  Given the following script called, say, `simple_read.py`:
+Read in a file and print the contents to `stdout`.  This shows how the contents of the extended CSV file are stored in the XCSV object.  Note how multi-line values, such as `summary` here, are stored in a list.  Given the following script called, say, `simple_read.py`:
 
 ```python
 import argparse
@@ -222,7 +222,7 @@ $ python3 simple_read.py missing_example.csv
 8             2004        NaN
 ```
 
-Note that the `-999.99` value has been automatically masked as a missing value (shown as `NaN` in the printed pandas `DataFrame`), as well as the `NA` and `NaN` strings in the original data, which pandas automatically masks itself, irrespective of the `missing_value` header item.
+Note that the `-999.99` value has been automatically masked as a missing value (shown as `NaN` in the printed pandas DataFrame), as well as the `NA` and `NaN` strings in the original data, which pandas automatically masks itself, irrespective of the `missing_value` header item.
 
 #### Simple read and plot
 
@@ -247,7 +247,7 @@ with xcsv.File(args.filename) as f:
 
 #### Simple read and write
 
-Read a file in, manipulate the data in some way, and write this modified `XCSV` object out to a new file:
+Read a file in, manipulate the data in some way, and write this modified XCSV object out to a new file:
 
 ```python
 import argparse
@@ -270,7 +270,7 @@ with xcsv.File(args.out_filename, mode='w') as f:
 
 #### Construct an XCSV object from data
 
-Construct the metadata and data as python objects and combine into an `XCSV` object:
+Construct the metadata and data as python objects and combine into an XCSV object:
 
 ```python
 import pprint
@@ -328,7 +328,7 @@ $ python3 construct_xcsv.py
 4           5                 -2.8
 ```
 
-Instead of printing to stdout, we could write the constructed `XCSV` object as an XCSV file:
+Instead of printing to stdout, we could write the constructed XCSV object as an XCSV file:
 
 ```python
     with xcsv.File('out.csv', mode='w') as f:
