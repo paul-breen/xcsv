@@ -294,24 +294,31 @@ class XCSV(object):
 
         The column headers look like:
 
+        ```
         nm1 (u1),nm2 (u2) [nt2],nm3 [nt3],nm4
+        ```
 
         where each column key is the whole string for that column,
-        e.g., k1 = f'{nm1} ({u1})' , k2 = f'{nm2} ({u2}) [{nt2}]', and so on.
+        e.g., `k1 = f'{nm1} ({u1})' , k2 = f'{nm2} ({u2}) [{nt2}]'`,
+        and so on.
 
         When `parse_metadata=True`, this will result in:
 
+        ```
         {k1: {'name': nm1, 'units': u1, 'notes': None},
          k2: {'name': nm2, 'units': u2, 'notes': nt2},
          k3: {'name': nm3, 'units': None, 'notes': nt3},
          k4: {'name': nm4, 'units': None, 'notes': None}}
+        ```
 
         whereas with `parse_metadata=False`, this will result in:
 
+        ```
         {k1: {'name': k1, 'units': None, 'notes': None},
          k2: {'name': k2, 'units': None, 'notes': None},
          k3: {'name': k3, 'units': None, 'notes': None},
          k4: {'name': k4, 'units': None, 'notes': None}}
+        ```
 
         :param parse_metadata: Parse each column header value
         :type parse_metadata: bool
@@ -549,16 +556,22 @@ class Reader(object):
 
         The extended header section (with default kwargs) looks like:
 
+        ```
         # k1: v1
         # k2: v2 (u2)
+        ```
 
         When `parse_metadata=True`, this will result in:
 
+        ```
         {k1: v1, k2: {'value': v2, 'units': u2}}
+        ```
 
         whereas with `parse_metadata=False`, this will result in:
 
+        ```
         {k1: v1, k2: f'{v2} ({u2})'}
+        ```
 
         Normally we parse a key and a value from each header line.  If a line
         has no key, then it's a continuation line so just take the value and
@@ -568,10 +581,10 @@ class Reader(object):
         A continuation line can be expressed in two forms.
 
         Simple form - Comment character, no key or delimiter, value:
-        # The second paragraph...
+        `# The second paragraph...`
 
         Escaped form - Comment character, no key but delimiter, value:
-        # : The second paragraph that may contain delimiter http://...
+        `# : The second paragraph that may contain delimiter http://...`
 
         If the effective encoding is UTF-8 and the first line of the input
         begins with a BOM, the BOM is silently skipped
