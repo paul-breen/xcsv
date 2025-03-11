@@ -15,7 +15,7 @@ Extended CSV format
 * Data rows.
 """
 
-__version__ = '0.6.0'
+__version__ = '0.6.1'
 
 import re
 import argparse

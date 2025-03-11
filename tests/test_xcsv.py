@@ -11,7 +11,7 @@ import xcsv
 base = os.path.dirname(__file__)
 
 def test_version():
-    assert xcsv.__version__ == '0.6.0'
+    assert xcsv.__version__ == '0.6.1'
 
 @pytest.fixture
 def dummy_metadata():
