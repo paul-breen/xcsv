@@ -328,6 +328,13 @@ $ python3 construct_xcsv.py
 4           5                 -2.8
 ```
 
+As a convenience, we could use XCSV to parse value/units dicts from header item string values:
+
+```python
+    'longitude': xcsv.XCSV.parse_file_header_tokens('-73.06 (degree_east)'),
+    'latitude': xcsv.XCSV.parse_file_header_tokens('-74.33 (degree_north)')
+```
+
 Instead of printing to stdout, we could write the constructed XCSV object as an XCSV file:
 
 ```python
