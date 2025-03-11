@@ -5,6 +5,16 @@
 # Date:    2022-04-14
 ###############################################################################
 
+"""
+Package for working with extended CSV (XCSV) files
+
+Extended CSV format
+
+* Extended header section of parseable atttributes, introduced by '#'.
+* Header row of variable name and units for each column.
+* Data rows.
+"""
+
 __version__ = '0.5.0'
 
 import re
