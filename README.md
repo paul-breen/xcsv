@@ -4,7 +4,7 @@ xcsv is a package for reading and writing extended CSV files.
 
 ## Extended CSV format
 
-* Extended header section of parseable atttributes, introduced by '#'.
+* Extended header section of parsable attributes, introduced by '#'.
 * Header row of variable name and units for each column.
 * Data rows.
 
